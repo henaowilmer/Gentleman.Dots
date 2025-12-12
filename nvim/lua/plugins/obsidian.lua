@@ -4,7 +4,8 @@ return {
   lazy = false,
   enabled = function()
     -- Disable Obsidian when running from Oil Simple (to avoid path issues in Zed context)
-    return not vim.g.disable_obsidian
+    -- return not vim.g.disable_obsidian
+    return false
   end,
   dependencies = {
     -- Required.
@@ -13,7 +14,7 @@ return {
   opts = {
     workspaces = {
       {
-        name = "GentlemanNotes", -- Name of the workspace
+        name = "wahh22", -- Name of the workspace
         path = os.getenv("HOME") .. "/.config/obsidian", -- Path to the notes directory
       },
     },

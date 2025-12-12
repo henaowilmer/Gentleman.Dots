@@ -5,6 +5,7 @@ background-opacity = 0.95
 background-blur-radius = 20
 
 gtk-tabs-location = hidden
+window-decoration = false
 
 
 #palette = 0=#16161d
