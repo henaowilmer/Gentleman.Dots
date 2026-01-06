@@ -26,9 +26,19 @@ yabai -m config mouse_action1                move
 yabai -m config mouse_action2                resize
 yabai -m config mouse_drop_action            swap
 
+# SketchyBar integration
+yabai -m config external_bar                 all:45:0
+
+# SketchyBar signals - trigger updates on workspace/window changes
+yabai -m signal --add event=space_changed action="sketchybar --trigger yabai_space_changed" label="sketchybar_space_changed"
+yabai -m signal --add event=window_created action="sketchybar --trigger yabai_window_created" label="sketchybar_window_created"
+yabai -m signal --add event=window_destroyed action="sketchybar --trigger yabai_window_destroyed" label="sketchybar_window_destroyed"
+yabai -m signal --add event=window_moved action="sketchybar --trigger yabai_window_moved" label="sketchybar_window_moved"
+yabai -m signal --add event=window_focused action="sketchybar --trigger yabai_space_changed" label="sketchybar_window_focused"
+
 # general space settings - beautiful spacing
 yabai -m config layout                       bsp
-yabai -m config top_padding                  6
+yabai -m config top_padding                  10
 yabai -m config bottom_padding               6
 yabai -m config left_padding                 6
 yabai -m config right_padding                6
