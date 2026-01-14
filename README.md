@@ -1,5 +1,9 @@
 # Gentleman.Dots
 
+> **Important Notice (January 2026)**: Anthropic has blocked third-party tools (OpenCode, Crush, etc.) from using Claude Max subscriptions. OAuth tokens are now restricted to Claude Code only. This config now uses **Claude Code as the primary AI assistant** in Neovim.
+>
+> **OpenCode Fix (v2.4.5)**: If you still want to use OpenCode with Claude Max/Pro, add the `opencode-anthropic-auth` plugin to your config. See [OpenCode with Claude Max](#opencode-with-claude-max) section below.
+
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9fcb1b15-89db-404e-b0f3-107801bd9115" />
 
 ---
@@ -180,17 +184,25 @@ home.packages = with pkgs; [
 
 ### Additional Linux Changes
 
-**1. Change home directory path** (around line 61):
+**1. Set your username** (around line 20):
+
+```nix
+# ─── User Configuration ───
+# Change this to your Linux username
+username = "YourUser";  # ← Replace with your username
+```
+
+**2. Change home directory path** (around line 67):
 
 ```nix
 # Change from macOS path:
-home.homeDirectory = "/Users/YourUser/";
+home.homeDirectory = "/Users/${username}";
 
 # To Linux path:
-home.homeDirectory = "/home/YourUser/";
+home.homeDirectory = "/home/${username}";
 ```
 
-**2. Add Linux system support** (around line 17):
+**3. Add Linux system support** (around line 17):
 
 ```nix
 # Change from:
@@ -200,7 +212,7 @@ supportedSystems = [ "x86_64-darwin" "aarch64-darwin" ];
 supportedSystems = [ "x86_64-darwin" "aarch64-darwin" "x86_64-linux" "aarch64-linux" ];
 ```
 
-**3. Add Linux home configuration** (around line 135):
+**4. Add Linux home configuration** (around line 140):
 
 ```nix
 homeConfigurations = {
@@ -217,7 +229,7 @@ homeConfigurations = {
 };
 ```
 
-**4. Run installation with Linux config:**
+**5. Run installation with Linux config:**
 
 ```bash
 home-manager switch --flake .#gentleman-linux
@@ -264,14 +276,19 @@ build-users-group = nixbld
 
 _(This is necessary because support for flakes and the new Nix command is still experimental, but it allows us to have a fully declarative and reproducible configuration.)_
 
-### 3. Prepare Your System
+### 3. Configure Your Username
 
 **No need to edit `flake.nix` for system configuration!** The flake supports both Intel and Apple Silicon Macs.
 
-You only need to update your username in `flake.nix`:
+You only need to update the `username` variable at the top of `flake.nix` (around line 20):
 
-- Change `home.username = "YourUser";` to your actual username
-- The home directory is automatically set to `/Users/YourUser`
+```nix
+# ─── User Configuration ───
+# Change this to your macOS username
+username = "YourUser";  # ← Replace with your username
+```
+
+This single variable is used for both `home.username` and `home.homeDirectory`, so you only need to change it in one place.
 
 ### 4. Install Terminal Emulators (Optional)
 
@@ -432,6 +449,33 @@ hash -r  # Refresh command cache
 source ~/.zshrc  # or ~/.bashrc
 ```
 
+**`nix: command not found` when running home-manager:**
+
+This happens when the Nix binaries aren't in your PATH. Source the Nix daemon profile first:
+
+```bash
+# Source Nix profile
+source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+
+# Then run home-manager
+home-manager switch --flake .#gentleman
+```
+
+**`Permission denied` when copying configs (sketchybar, nvim, etc):**
+
+Some config files may be set as read-only. Fix permissions before running home-manager:
+
+```bash
+# For sketchybar:
+chmod -R u+w ~/.config/sketchybar/
+
+# For nvim:
+chmod -R u+w ~/.config/nvim/
+
+# Then re-run home-manager
+home-manager switch --flake .#gentleman
+```
+
 **Nix installation issues:**
 
 - Ensure `/etc/nix/nix.conf` has experimental features enabled
@@ -590,6 +634,32 @@ To switch from one AI assistant to another:
 - **For Claude users:** Use **Claude Code.nvim** with the Claude Code CLI
 - **For GitHub Copilot users:** Use **CopilotChat.nvim**
 - **For Google Gemini users:** Use **Gemini.nvim** with the Gemini CLI
+
+### OpenCode with Claude Max
+
+> **Why Claude Code is now the default:** In January 2026, Anthropic restricted their OAuth tokens to only work with the official Claude Code CLI. Third-party tools like OpenCode, Crush, etc. were blocked from using Claude Max/Pro subscriptions.
+
+**However, there's a fix!** The `opencode-anthropic-auth` plugin enables OAuth authentication with Claude Max/Pro directly from OpenCode.
+
+To enable it, add this to your `opencode.json`:
+
+```json
+{
+  "plugin": ["opencode-anthropic-auth"],
+  "model": "anthropic/claude-sonnet-4-20250514"
+}
+```
+
+**What this does:**
+- Allows OpenCode to authenticate using your Claude Max/Pro subscription
+- No separate API keys needed
+- Full access to Claude Sonnet 4 and other models
+
+> **Stability warning:** This workaround is stable *for now*, but Anthropic could block it at any time. If you need guaranteed long-term stability, use Claude Code CLI instead.
+
+**Location:** `~/.config/opencode/opencode.json`
+
+If you prefer OpenCode over Claude Code CLI, this is the way to go (at your own risk).
 
 ## Contributing
 

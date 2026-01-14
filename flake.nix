@@ -16,6 +16,10 @@
       # Support macOS systems only
       supportedSystems = [ "x86_64-darwin" "aarch64-darwin" ];
       
+      # ─── User Configuration ───
+      # Change this to your macOS username
+      username = "YourUser";
+
       # Function to create home configuration for a specific system
       mkHomeConfiguration = system:
         let
@@ -74,6 +78,7 @@
                 # ─── Window management (macOS) ───
                 yabai
                 skhd
+                sketchybar
 
                 # ─── Development tools ───
                 volta
