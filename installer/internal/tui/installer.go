@@ -1071,7 +1071,8 @@ func stepInstallNvim(m *Model) error {
 	var result *system.ExecResult
 	if m.SystemInfo.IsTermux {
 		// Termux package names (neovim instead of nvim, clang instead of gcc)
-		result = system.RunPkgInstall("neovim git clang fzf fd ripgrep bat curl lazygit", nil, func(line string) {
+		// Install Lua tooling via pkg to avoid Mason unsupported platform binaries.
+		result = system.RunPkgInstall("neovim git clang fzf fd ripgrep bat curl lazygit lua-language-server stylua", nil, func(line string) {
 			SendLog(stepID, line)
 		})
 	} else {

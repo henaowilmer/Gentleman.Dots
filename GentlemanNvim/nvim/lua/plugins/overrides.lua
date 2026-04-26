@@ -1,5 +1,8 @@
 -- This file contains the configuration overrides for specific Neovim plugins.
 
+local is_termux = vim.env.TERMUX_VERSION ~= nil
+  or (vim.env.PREFIX and vim.env.PREFIX:find("com.termux", 1, true) ~= nil)
+
 return {
   -- Change configuration for trouble.nvim
   {
@@ -49,7 +52,43 @@ return {
             },
           },
         },
+        lua_ls = is_termux and {
+          cmd = { "lua-language-server" },
+          autostart = true,
+          mason = false,
+        } or nil,
       },
     },
+  },
+
+  {
+    "williamboman/mason-lspconfig.nvim",
+    opts = function(_, opts)
+      if not is_termux then
+        return
+      end
+      opts.ensure_installed = opts.ensure_installed or {}
+      opts.ensure_installed = vim.tbl_filter(function(server)
+        return server ~= "lua_ls"
+      end, opts.ensure_installed)
+    end,
+  },
+
+  {
+    "WhoIsSethDaniel/mason-tool-installer.nvim",
+    opts = function(_, opts)
+      if not is_termux then
+        return
+      end
+      opts.ensure_installed = opts.ensure_installed or {}
+      local blocked = {
+        stylua = true,
+        ["lua-language-server"] = true,
+        lua_ls = true,
+      }
+      opts.ensure_installed = vim.tbl_filter(function(tool)
+        return not blocked[tool]
+      end, opts.ensure_installed)
+    end,
   },
 }
