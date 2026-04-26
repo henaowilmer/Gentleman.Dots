@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
 {
   home.activation.copyYabai = lib.hm.dag.entryAfter ["writeBoundary"] ''
     # ─── macOS Mission Control settings ───
@@ -22,14 +22,15 @@
 
     # ─── Yabai sudoers setup for scripting addition ───
     # Required for space switching (yabai --load-sa needs passwordless sudo)
-    YABAI_BIN="$(which yabai)"
-    YABAI_HASH="$(shasum -a 256 "$YABAI_BIN" | awk '{print $1}')"
+    YABAI_BIN="${lib.getExe pkgs.yabai}"
+    YABAI_HASH="$(${pkgs.coreutils}/bin/sha256sum "$YABAI_BIN")"
+    YABAI_HASH="''${YABAI_HASH%% *}"
     EXPECTED_ENTRY="$USER ALL=(root) NOPASSWD: sha256:$YABAI_HASH $YABAI_BIN --load-sa"
 
     NEEDS_UPDATE=false
     if [ ! -f /private/etc/sudoers.d/yabai ]; then
       NEEDS_UPDATE=true
-    elif ! grep -q "$YABAI_HASH" /private/etc/sudoers.d/yabai 2>/dev/null; then
+    elif ! ${pkgs.gnugrep}/bin/grep -q "$YABAI_HASH" /private/etc/sudoers.d/yabai 2>/dev/null; then
       NEEDS_UPDATE=true
     fi
 

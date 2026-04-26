@@ -10,13 +10,15 @@
     SKETCHYBAR_DIR="$HOME/.config/sketchybar"
     mkdir -p "$SKETCHYBAR_DIR/plugins"
     
-    # Copy main config
-    cp "${toString ./sketchybar}/sketchybarrc" "$SKETCHYBAR_DIR/sketchybarrc"
-    chmod +x "$SKETCHYBAR_DIR/sketchybarrc"
+    # Copy main config (ensure re-runs can overwrite existing files)
+    chmod u+w "$SKETCHYBAR_DIR/sketchybarrc" 2>/dev/null || true
+    cp -f "${toString ./sketchybar}/sketchybarrc" "$SKETCHYBAR_DIR/sketchybarrc"
+    chmod 755 "$SKETCHYBAR_DIR/sketchybarrc"
     
     # Copy plugins
-    cp "${toString ./sketchybar}/plugins/"*.sh "$SKETCHYBAR_DIR/plugins/"
-    chmod +x "$SKETCHYBAR_DIR/plugins/"*.sh
+    chmod u+w "$SKETCHYBAR_DIR/plugins/"*.sh 2>/dev/null || true
+    cp -f "${toString ./sketchybar}/plugins/"*.sh "$SKETCHYBAR_DIR/plugins/"
+    chmod 755 "$SKETCHYBAR_DIR/plugins/"*.sh
     
     echo "SketchyBar configuration copied to $SKETCHYBAR_DIR"
   '';
