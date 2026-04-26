@@ -119,7 +119,7 @@ func stepCloneRepo(m *Model) error {
 	}
 
 	SendLog(stepID, "Cloning repository from GitHub...")
-	result := system.RunWithLogs("git clone --progress https://github.com/Gentleman-Programming/Gentleman.Dots.git Gentleman.Dots", nil, func(line string) {
+	result := system.RunWithLogs("git clone --progress --branch wahh-main --single-branch https://github.com/henaowilmer/Gentleman.Dots.git Gentleman.Dots", nil, func(line string) {
 		SendLog(stepID, line)
 	})
 	if result.Error != nil {
@@ -907,9 +907,15 @@ func stepInstallWM(m *Model) error {
 
 		// Install plugins
 		SendLog(stepID, "Installing Tmux plugins...")
-		system.RunWithLogs(filepath.Join(homeDir, ".tmux/plugins/tpm/bin/install_plugins"), nil, func(line string) {
+		installPluginsPath := filepath.Join(homeDir, ".tmux/plugins/tpm/bin/install_plugins")
+		installCmd := fmt.Sprintf("bash %s", installPluginsPath)
+		result := system.RunWithLogs(installCmd, nil, func(line string) {
 			SendLog(stepID, line)
 		})
+		if result.Error != nil {
+			SendLog(stepID, "Warning: TPM plugin installation did not complete automatically")
+			SendLog(stepID, "Run manually: bash ~/.tmux/plugins/tpm/bin/install_plugins")
+		}
 		SendLog(stepID, "✓ Tmux configured")
 
 	case "zellij":

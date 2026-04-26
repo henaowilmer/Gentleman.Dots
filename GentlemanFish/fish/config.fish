@@ -39,7 +39,7 @@ if test $IS_TERMUX -eq 0; and set -q BREW_BIN; and test -f $BREW_BIN
 end
 
 # Start tmux/zellij
-if not set -q TMUX
+if command -sq tmux; and not set -q TMUX
     tmux
 end
 
@@ -48,10 +48,18 @@ end
 #end
 
 # Initialize tools
-starship init fish | source
-zoxide init fish | source
-atuin init fish | source
-fzf --fish | source
+if command -sq starship
+    starship init fish | source
+end
+if command -sq zoxide
+    zoxide init fish | source
+end
+if command -sq atuin
+    atuin init fish | source
+end
+if command -sq fzf
+    fzf --fish | source
+end
 
 set -x PATH $HOME/.cargo/bin $PATH
 
@@ -66,11 +74,15 @@ if not test -f ~/.config/fish/completions/.initialized
     if not test -d ~/.config/fish/completions
         mkdir -p ~/.config/fish/completions
     end
-    carapace --list | awk '{print $1}' | xargs -I{} touch ~/.config/fish/completions/{}.fish
+    if command -sq carapace
+        carapace --list | awk '{print $1}' | xargs -I{} touch ~/.config/fish/completions/{}.fish
+    end
     touch ~/.config/fish/completions/.initialized
 end
 
-carapace _carapace | source
+if command -sq carapace
+    carapace _carapace | source
+end
 
 set -g fish_greeting ""
 
@@ -82,10 +94,10 @@ set -gx EDITOR nvim
 set -gx VISUAL nvim
 
 ## alias
-if test (uname) = Darwin
-    alias ls='ls --color=auto'
-else
+if command -sq gls
     alias ls='gls --color=auto'
+else
+    alias ls='ls --color=auto'
 end
 
 alias fzfbat='fzf --preview="bat --theme=gruvbox-dark --color=always {}"'

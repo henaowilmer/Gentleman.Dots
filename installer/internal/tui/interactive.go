@@ -302,7 +302,7 @@ set -e
 # Add brew to PATH for this script
 export PATH="%s/bin:$PATH"
 
-SHELL_PATH=$(which %s 2>/dev/null)
+SHELL_PATH=$(command -v %s 2>/dev/null || true)
 
 if [ -z "$SHELL_PATH" ]; then
     echo "❌ Shell '%s' not found in PATH"
@@ -354,7 +354,7 @@ func getSetShellScriptTermux(shellCmd string) (string, error) {
 	script := fmt.Sprintf(`#!/data/data/com.termux/files/usr/bin/sh
 set -e
 
-SHELL_PATH=$(which %s 2>/dev/null)
+SHELL_PATH=$(command -v %s 2>/dev/null || true)
 
 if [ -z "$SHELL_PATH" ]; then
     echo "❌ Shell '%s' not found in PATH"
@@ -417,9 +417,9 @@ func createTempScriptCommand(script string) (*exec.Cmd, error) {
 		return nil, fmt.Errorf("failed to make script executable: %w", err)
 	}
 
-	// Return command - use available shell (bash, sh, or zsh)
-	shellPath := system.GetShell()
-	cmd := exec.Command(shellPath, tmpFile.Name())
+	// Run script directly so its shebang decides the interpreter.
+	// This avoids mismatches when the user selected a different login shell.
+	cmd := exec.Command(tmpFile.Name())
 	cmd.Env = os.Environ()
 
 	return cmd, nil
