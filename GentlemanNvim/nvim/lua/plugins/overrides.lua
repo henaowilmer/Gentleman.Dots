@@ -62,7 +62,7 @@ return {
   },
 
   {
-    "williamboman/mason-lspconfig.nvim",
+    "mason-org/mason-lspconfig.nvim",
     opts = function(_, opts)
       if not is_termux then
         return
