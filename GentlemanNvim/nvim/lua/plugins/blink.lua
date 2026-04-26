@@ -1,7 +1,8 @@
 return {
   "saghen/blink.cmp",
+  enabled = false,
   lazy = true,
-  dependencies = { "saghen/blink.compat" },
+  dependencies = { "saghen/blink.compat", "saghen/blink.lib" },
   opts = {
     sources = {
       default = { "avante_commands", "avante_mentions", "avante_files" },

@@ -67,7 +67,9 @@ require("lazy").setup({
     -- Coding plugins
     { import = "lazyvim.plugins.extras.coding.mini-surround" },
     { import = "lazyvim.plugins.extras.editor.mini-diff" },
-    { import = "lazyvim.plugins.extras.coding.blink" },
+    -- Blink is disabled in Termux by custom override in plugins/blink.lua.
+    -- Keep LazyVim extras import disabled to avoid loading incompatible runtime pieces.
+    -- { import = "lazyvim.plugins.extras.coding.blink" },
 
     -- Utility plugins
     { import = "lazyvim.plugins.extras.util.mini-hipatterns" },
