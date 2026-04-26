@@ -1,8 +1,6 @@
 # Gentleman.Dots
 
-> **Important Notice (January 2026)**: Anthropic has blocked third-party tools (OpenCode, Crush, etc.) from using Claude Max subscriptions. OAuth tokens are now restricted to Claude Code only. This config now uses **Claude Code as the primary AI assistant** in Neovim.
->
-> **OpenCode Fix (v2.4.5)**: If you still want to use OpenCode with Claude Max/Pro, add the `opencode-anthropic-auth` plugin to your config. See [OpenCode with Claude Max](#opencode-with-claude-max) section below.
+> **Important Notice (January 2026)**: Anthropic has blocked third-party tools (OpenCode, Crush, etc.) from using Claude Max subscriptions. OAuth tokens are now restricted to Claude Code only. This config now uses **Claude Code as the primary AI assistant** in Neovim, and **OpenCode with API key** as secondary option.
 
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9fcb1b15-89db-404e-b0f3-107801bd9115" />
 
@@ -42,10 +40,11 @@ This repository provides a complete, declarative development environment configu
 
 ### 🤖 AI Integrations
 
-- **Claude Code CLI**: Integrated AI coding assistant
-- **OpenCode**: AI assistant integration
+- **Claude Code CLI**: Primary AI coding assistant with 35 skills, SDD orchestrator workflow, Engram persistent memory, and custom Gentleman persona
+- **OpenCode**: Multi-model AI assistant with 12 agents (gentleman, sdd-orchestrator, dangerous-gentleman + 9 SDD sub-agents), same 35 skills, multi-provider support
+- **Engram**: Persistent memory system for cross-session context and SDD artifact storage
+- **MCP Servers**: Context7 (documentation), Notion (knowledge management)
 - **Gemini CLI**: Google's AI assistant (optional)
-- **Multiple AI providers**: Support for various AI coding assistants
 
 ### 🔧 System Utilities
 
@@ -54,7 +53,14 @@ This repository provides a complete, declarative development environment configu
 - **Atuin**: Enhanced shell history
 - **Carapace**: Universal shell completions
 - **FZF**: Fuzzy finder integration
-- **Aerospace**: Tiling window manager configuration (optional)
+- **Raycast Scripts**: Custom automation scripts for display management
+
+### 🪟 Window Management (macOS)
+
+- **Yabai**: Tiling window manager with scripting support
+- **Skhd**: Hotkey daemon for keyboard shortcuts
+- **SketchyBar**: Customizable status bar with plugins
+- **Aerospace**: Alternative tiling window manager (optional)
 
 ### 📝 Development Workflow
 
@@ -88,42 +94,69 @@ The flake automatically handles system-specific configurations, installs all dep
 | **Terminals**       | Ghostty, WezTerm, Tmux, Zellij (optional) |
 | **Editor**          | Neovim (LazyVim) + Zed                    |
 | **Languages**       | Node.js, Rust, Go, with Volta management  |
-| **AI Tools**        | Claude Code, OpenCode, Gemini (opt.), multiple providers |
+| **AI Tools**        | Claude Code, OpenCode (12 agents), Engram, Context7, Notion MCP |
 | **Navigation**      | Television, Yazi, Oil.nvim, Zoxide        |
 | **Development**     | Git, GitHub CLI, Lazy Git                 |
+| **Window Manager**  | Yabai + Skhd, SketchyBar, Aerospace (opt) |
+| **Automation**      | Raycast Scripts                           |
 
 ### 📁 Project Structure
 
 ```
 .
 ├── flake.nix              # Main Nix flake configuration
-├── README.md               # This file
+├── README.md              # This file
+├── AGENTS.md              # AI agent instructions
+│
+├── # ─── Shell Configurations ───
 ├── fish.nix               # Fish shell configuration
+├── fish/                  # Fish completions (400+ commands)
 ├── nushell.nix            # Nushell configuration
+├── nushell/               # Nushell config and env files
 ├── zsh.nix                # Zsh configuration
 ├── starship.nix           # Starship prompt configuration
-├── nvim.nix               # Neovim configuration
+│
+├── # ─── Terminal Emulators ───
 ├── ghostty.nix            # Ghostty terminal configuration
+├── ghostty/               # Ghostty config, themes, and shaders
 ├── wezterm.nix            # WezTerm configuration
 ├── tmux.nix               # Tmux configuration
-├── zed.nix                # Zed editor configuration
-├── claude.nix             # Claude Code CLI configuration
-├── opencode.nix           # OpenCode AI configuration
-├── gemini.nix             # Gemini CLI configuration (optional)
-├── television.nix         # Television file navigator
 ├── zellij.nix             # Zellij terminal workspace (optional)
+├── zellij/                # Zellij plugins (zjstatus, forgot)
+│
+├── # ─── Editors ───
+├── nvim.nix               # Neovim configuration
+├── nvim/                  # Neovim plugins and settings (LazyVim)
+├── nvim-oil-minimal/      # Minimal Neovim config for Oil.nvim
+├── zed.nix                # Zed editor configuration
+├── zed/                   # Zed themes, keymaps, tasks, prompts
+│
+├── # ─── AI Tools ───
+├── claude.nix             # Claude Code CLI configuration
+├── claude/                # Claude settings, 35 skills, themes, statusline, output styles
+├── opencode.nix           # OpenCode AI configuration
+├── opencode/              # OpenCode config, AGENTS.md, 35 skills, themes
+├── engram.nix             # Engram persistent memory configuration
+├── gemini.nix             # Gemini CLI configuration (optional)
+│
+├── # ─── Window Management (macOS) ───
+├── yabai.nix              # Yabai window manager configuration
+├── yabai/                 # Yabai scripts and config
+├── skhd.nix               # Skhd hotkey daemon configuration
+├── skhd/                  # Skhd keybindings (skhdrc)
+├── sketchybar.nix         # SketchyBar status bar configuration
+├── sketchybar/            # SketchyBar plugins and config
+├── simple-bar.nix         # simple-bar for Übersicht (disabled)
+├── simple-bar/            # simple-bar themes (disabled)
+├── aerospace/             # Aerospace window manager config (optional)
+│
+├── # ─── Utilities ───
+├── television.nix         # Television file navigator
+├── television/            # Television config and channels
 ├── oil-scripts.nix        # Custom Oil.nvim scripts
-├── yabai.nix              # Yabai window manager (macOS only)
-├── skhd.nix               # Skhd hotkey daemon (macOS only)
-├── simple-bar.nix         # simple-bar for Übersicht (macOS only)
-├── fish/                  # Fish completions and configs
-├── nvim/                  # Neovim plugins and settings
-├── ghostty/               # Ghostty themes and config
-├── zed/                   # Zed themes and settings
-├── scripts/               # Custom utility scripts
-├── simple-bar/            # simple-bar themes and config (macOS only)
-├── yabai/                 # Yabai window manager config (macOS only)
-└── aerospace/             # Aerospace window manager config
+├── scripts/               # Custom utility scripts (ocd, oil)
+├── raycast.nix            # Raycast scripts configuration
+└── raycast/               # Raycast automation scripts
 ```
 
 ---
@@ -138,7 +171,9 @@ The following modules are **macOS-only** and will fail on Linux:
 |--------|-------------|----------------|
 | `yabai.nix` | Tiling window manager | Uses macOS Accessibility API |
 | `skhd.nix` | Hotkey daemon | Depends on macOS input system |
+| `sketchybar.nix` | Status bar | macOS menu bar integration |
 | `simple-bar.nix` | Status bar widget | Requires Übersicht (macOS app) |
+| `raycast.nix` | Automation scripts | Raycast is macOS-only |
 
 ### How to Disable macOS Modules
 
@@ -247,6 +282,68 @@ For window management on Linux, consider:
 
 ---
 
+## 🖥️ SketchyBar Status Bar
+
+This configuration includes a fully customized SketchyBar setup with:
+
+- **Workspace indicators** with Yabai integration
+- **System monitors** (CPU, memory, battery)
+- **Media controls** and now playing info
+- **Custom plugins** for various system information
+
+### SketchyBar Plugins
+
+| Plugin | Description |
+|--------|-------------|
+| `spaces.sh` | Workspace/space indicators with window counts |
+| `front_app.sh` | Currently focused application |
+| `media.sh` | Now playing media info |
+| `battery.sh` | Battery status and percentage |
+| `wifi.sh` | Network connection status |
+| `clock.sh` | Date and time display |
+
+### Starting SketchyBar
+
+SketchyBar starts automatically via Nix. To manually control:
+
+```bash
+# Start
+brew services start sketchybar
+
+# Restart
+brew services restart sketchybar
+
+# Stop
+brew services stop sketchybar
+```
+
+---
+
+## ⚡ Raycast Scripts
+
+Custom Raycast automation scripts for display and system management:
+
+| Script | Description |
+|--------|-------------|
+| `set-4k.sh` | Set LG TV to 4K resolution with multi-monitor arrangement |
+| `set-1080p.sh` | Set LG TV to 1080p resolution with multi-monitor arrangement |
+| `reset-display-placement.sh` | Auto-detect resolution and reset display arrangement |
+| `restart-sketchybar.sh` | Kill and restart SketchyBar |
+
+### Setup
+
+1. Open Raycast Settings → Extensions → Script Commands
+2. Add `~/Raycast Scripts/` as a script directory
+3. Scripts will be available in Raycast search
+
+### Requirements
+
+- [displayplacer](https://github.com/jakehilborn/displayplacer): `brew install displayplacer`
+
+> **Note:** Display scripts use hardcoded monitor IDs. Run `displayplacer list` to get your monitor IDs and update the scripts accordingly.
+
+---
+
 ## Installation Steps (for macOS)
 
 ### 1. Install the Nix Package Manager
@@ -298,15 +395,55 @@ Configurations are automatically applied. Choose your preferred terminal:
   - Reload config with **Shift + Cmd + ,**
   - Modern GPU-accelerated with custom themes
   - Optimized for performance
+  - **50+ custom shaders included** (CRT effects, cursor trails, matrix, etc.)
 
 - **WezTerm**: <https://wezterm.org/installation.html>
   - Feature-rich with Lua configuration
   - Cross-platform compatibility
   - Advanced customization options
 
-### 5. Optional: Aerospace Window Manager
+#### Ghostty Shaders
 
-For tiling window management, copy the Aerospace configuration:
+The configuration includes 50+ GLSL shaders for visual effects:
+
+| Category | Examples |
+|----------|----------|
+| **CRT Effects** | `crt.glsl`, `bettercrt.glsl`, `retro-terminal.glsl` |
+| **Cursor Trails** | `cursor_blaze.glsl`, `cursor_smear.glsl`, `cursor_frozen.glsl` |
+| **Backgrounds** | `starfield.glsl`, `matrix-hallway.glsl`, `galaxy.glsl` |
+| **Effects** | `bloom.glsl`, `glitchy.glsl`, `underwater.glsl` |
+
+To enable a shader, edit `~/.config/ghostty/config` and add:
+```
+custom-shader = ~/.config/ghostty/shaders/cursor_smear_gentleman.glsl
+```
+
+### 5. Window Management Options
+
+#### Option A: Yabai + Skhd (Recommended)
+
+Yabai and Skhd are automatically configured via the flake. They provide:
+
+- **Yabai**: Tiling window manager with BSP layout
+- **Skhd**: Hotkey daemon for keyboard shortcuts
+- **SketchyBar**: Status bar with workspace indicators
+
+**Key bindings (configured in `skhd/skhdrc`):**
+
+| Shortcut | Action |
+|----------|--------|
+| `alt + h/j/k/l` | Focus window (vim-style) |
+| `shift + alt + h/j/k/l` | Move window |
+| `alt + 1-9` | Switch to space |
+| `shift + alt + 1-9` | Move window to space |
+| `alt + f` | Toggle fullscreen |
+| `alt + t` | Toggle float |
+
+> **Note:** Yabai requires accessibility permissions and SIP configuration. See `yabai/README.md` for details.
+
+#### Option B: Aerospace (Alternative)
+
+For a simpler setup without SIP changes, copy the Aerospace configuration:
 
 ```bash
 cp ./aerospace/.aerospace.toml ~/
@@ -317,7 +454,7 @@ Aerospace provides:
 - Automatic window tiling
 - Workspace management
 - Keyboard-driven navigation
-- macOS-native integration
+- macOS-native integration (no SIP changes needed)
 
 ### 6. Install Home Manager
 
@@ -402,18 +539,25 @@ shellPath="$HOME/.local/state/nix/profiles/home-manager/home-path/bin/zsh" && su
 
 Configurations are automatically deployed to:
 
-| Tool           | Location                                 |
-| -------------- | ---------------------------------------- |
-| **Nushell**    | `~/Library/Application Support/nushell/` |
-| **Fish**       | `~/.config/fish/`                        |
-| **Ghostty**    | `~/.config/ghostty/`                     |
-| **WezTerm**    | `~/.wezterm.lua`                         |
-| **Neovim**     | `~/.config/nvim/`                        |
-| **Zed**        | `~/Library/Application Support/Zed/`     |
-| **Starship**   | `~/.config/starship.toml`                |
-| **Tmux**       | `~/.config/tmux/`                        |
-| **Zellij**     | `~/.config/zellij/` (optional)           |
-| **Television** | `~/.config/television/`                  |
+| Tool              | Location                                 |
+| ----------------- | ---------------------------------------- |
+| **Nushell**       | `~/Library/Application Support/nushell/` |
+| **Fish**          | `~/.config/fish/`                        |
+| **Ghostty**       | `~/.config/ghostty/`                     |
+| **WezTerm**       | `~/.wezterm.lua`                         |
+| **Neovim**        | `~/.config/nvim/`                        |
+| **Zed**           | `~/Library/Application Support/Zed/`     |
+| **Starship**      | `~/.config/starship.toml`                |
+| **Tmux**          | `~/.config/tmux/`                        |
+| **Zellij**        | `~/.config/zellij/` (optional)           |
+| **Television**    | `~/.config/television/`                  |
+| **Claude Code**   | `~/.claude/`                             |
+| **OpenCode**      | `~/.config/opencode/`                    |
+| **Engram**        | `~/go/bin/engram` (managed by `engram.nix`) |
+| **Yabai**         | `~/.config/yabai/`                       |
+| **Skhd**          | `~/.config/skhd/`                        |
+| **SketchyBar**    | `~/.config/sketchybar/`                  |
+| **Raycast**       | `~/Raycast Scripts/`                     |
 
 ### 🚀 Performance Features
 
@@ -426,10 +570,11 @@ Configurations are automatically deployed to:
 
 ### 🤖 AI Development Features
 
-- **Claude Code Integration**: Native AI coding assistant
-- **Multiple AI Providers**: Support for various AI services
-- **Context-Aware**: AI tools integrated with your development workflow
-- **Productivity Focused**: AI assistants configured for maximum productivity
+- **Claude Code Integration**: Native AI coding assistant with 35 skills and SDD orchestrator
+- **OpenCode Multi-Agent**: 12 agents spanning multiple AI providers for SDD workflow
+- **Engram Memory**: Persistent cross-session memory for context and artifact storage
+- **MCP Servers**: Context7 for live documentation, Notion for knowledge management
+- **SDD Workflow**: Full Spec-Driven Development pipeline (explore → propose → spec → design → tasks → apply → verify → archive)
 
 ### 🎨 Theming & Customization
 
@@ -571,6 +716,113 @@ Some configurations are commented out by default. To enable them:
    - Direct access with `gemini` command
    - Perfect for AI-powered development workflows
 
+## 🤖 Claude Code CLI Configuration
+
+This configuration includes a complete Claude Code CLI setup with custom skills, themes, and output styles.
+
+### Claude Code Features
+
+| Feature | Description |
+|---------|-------------|
+| **CLAUDE.md** | Custom system instructions and Gentleman persona |
+| **Skills** | 35 skills covering SDD workflow, frameworks, testing, and project patterns |
+| **Output Styles** | Custom response formatting (Gentleman style) |
+| **Themes** | Custom TweakCC theme for terminal |
+| **Statusline** | Custom status bar script |
+| **MCP Servers** | context7 (docs), engram (memory), notion (knowledge) |
+
+### Included Skills
+
+Both Claude Code and OpenCode share the **exact same 35 skills**, organized by category:
+
+**SDD Skills (9)** — Spec-Driven Development workflow:
+
+| Skill | Description |
+|-------|-------------|
+| `sdd-init` | Initialize SDD context in any project |
+| `sdd-explore` | Explore and investigate ideas before committing |
+| `sdd-propose` | Create a change proposal with intent and scope |
+| `sdd-spec` | Write specifications with requirements and scenarios |
+| `sdd-design` | Create technical design document |
+| `sdd-tasks` | Break down a change into implementation tasks |
+| `sdd-apply` | Implement tasks following specs and design |
+| `sdd-verify` | Validate implementation matches specs |
+| `sdd-archive` | Sync delta specs and archive completed changes |
+
+**Framework Skills (10)**:
+
+| Skill | Trigger |
+|-------|---------|
+| `react-19` | React components, hooks, JSX (React Compiler) |
+| `nextjs-15` | App Router, Server Components, Server Actions |
+| `typescript` | Types, interfaces, generics (strict mode) |
+| `tailwind-4` | Tailwind CSS 4 styling patterns |
+| `zod-4` | Zod 4 schema validation |
+| `zustand-5` | Zustand 5 state management |
+| `ai-sdk-5` | Vercel AI SDK 5 chat features |
+| `django-drf` | Django REST Framework ViewSets, Serializers |
+| `dotnet` | .NET 9 / ASP.NET Core Minimal APIs |
+| `scope-rule-architect-angular` | Angular 20+ Scope Rule architecture |
+
+**Testing Skills (3)**:
+
+| Skill | Trigger |
+|-------|---------|
+| `playwright` | E2E tests, Page Objects, selectors |
+| `pytest` | Python tests, fixtures, mocking |
+| `go-testing` | Go tests, Bubbletea TUI testing |
+
+**Workflow Skills (5)**:
+
+| Skill | Trigger |
+|-------|---------|
+| `skill-creator` | Creating new AI agent skills |
+| `skill-registry` | Update skill registry for project |
+| `pr-review` | Review GitHub PRs and issues |
+| `technical-review` | Review candidate submissions |
+| `homebrew-release` | Release workflow for Gentleman-Programming projects |
+
+**Project Skills (7)** — Gentleman.Dots specific:
+
+| Skill | Trigger |
+|-------|---------|
+| `gentleman-bubbletea` | Bubbletea TUI patterns in installer |
+| `gentleman-installer` | Installation step patterns |
+| `gentleman-system` | System detection and command execution |
+| `gentleman-trainer` | Vim Trainer RPG system patterns |
+| `gentleman-e2e` | Docker-based E2E testing |
+| `jira-epic` | Create Jira epics (Prowler standard format) |
+| `jira-task` | Create Jira tasks (Prowler standard format) |
+
+**Creative (1)**:
+
+| Skill | Trigger |
+|-------|---------|
+| `stream-deck` | Slide-deck presentations for streams and courses |
+
+### OpenCode Configuration
+
+OpenCode shares all 35 skills with Claude Code and additionally includes:
+
+- **12 agents** defined in `opencode.json`:
+  - `gentleman` — primary coding agent with Gentleman persona (primary)
+  - `sdd-orchestrator` — SDD orchestration with delegation-only behavior (primary)
+  - `dangerous-gentleman` — all permissions enabled, for complex automation
+  - 9 hidden SDD sub-agents, each using a different model:
+    - `sdd-apply` → claude-sonnet-4-6
+    - `sdd-archive` → gpt-5.4
+    - `sdd-design` → claude-opus-4-6
+    - `sdd-explore` → claude-sonnet-4-6
+    - `sdd-init` → claude-opus-4-6
+    - `sdd-propose` → gemini-3.1-pro-preview
+    - `sdd-spec` → gemini-3.1-pro-preview
+    - `sdd-tasks` → gemini-3.1-pro-preview
+    - `sdd-verify` → gpt-5.4
+- **AGENTS.md** — project-level agent instructions referenced by all agents via `{file:./AGENTS.md}`
+- **MCP Servers**: context7 (documentation), engram (persistent memory), notion (knowledge management)
+
+---
+
 ## AI Configuration for Neovim
 
 This configuration includes support for the following AI tools:
@@ -635,13 +887,77 @@ To switch from one AI assistant to another:
 - **For GitHub Copilot users:** Use **CopilotChat.nvim**
 - **For Google Gemini users:** Use **Gemini.nvim** with the Gemini CLI
 
-### OpenCode with Claude Max
+### OpenCode Configuration
 
-> **Why Claude Code is now the default:** In January 2026, Anthropic restricted their OAuth tokens to only work with the official Claude Code CLI. Third-party tools like OpenCode, Crush, etc. were blocked from using Claude Max/Pro subscriptions.
+> **Why Claude Code is the default:** In January 2026, Anthropic restricted their OAuth tokens to only work with the official Claude Code CLI. Third-party tools like OpenCode, Crush, etc. were blocked from using Claude Max/Pro subscriptions.
 
-**However, there's a fix!** The `opencode-anthropic-auth` plugin enables OAuth authentication with Claude Max/Pro directly from OpenCode.
+**Recommended: Use OpenCode with API Key**
 
-To enable it, add this to your `opencode.json`:
+The safest way to use OpenCode is with an Anthropic API key:
+
+```json
+{
+  "provider": "anthropic",
+  "model": "anthropic/claude-sonnet-4-20250514"
+}
+```
+
+Then set your API key:
+```bash
+export ANTHROPIC_API_KEY="your-api-key-here"
+```
+
+**Location:** `~/.config/opencode/opencode.json`
+
+### OpenCode SDD Orchestrator (Agent Teams)
+
+This setup also includes an `sdd-orchestrator` agent with the same Gentleman personality as `gentleman`, plus delegate-only SDD orchestration behavior.
+
+Recommended usage flow:
+
+1. Start OpenCode in your project:
+
+   ```bash
+   opencode .
+   ```
+
+2. Open the agent picker (`Tab`) and select `sdd-orchestrator`
+
+3. Run SDD commands:
+
+   ```text
+   /sdd:init
+   /sdd:new <change-name>
+   /sdd:continue
+   ```
+
+4. Switch back to `gentleman` (Tab) for day-to-day coding.
+
+Artifact store recommendation:
+- Use `artifact_store.mode: engram` (recommended) - https://github.com/gentleman-programming/engram
+- `auto` fallback order: user-requested files -> engram -> existing openspec -> none
+
+---
+
+<details>
+<summary>⚠️ <strong>RISKY ALTERNATIVE: opencode-anthropic-auth plugin</strong> (click to expand)</summary>
+
+There's a community plugin (`opencode-anthropic-auth`) that enables OAuth authentication with Claude Max/Pro subscriptions. **However, this violates Anthropic's Terms of Service and can result in account suspension.**
+
+**What the plugin does:**
+- Spoofs the Claude Code CLI's OAuth client ID
+- Fakes the user-agent to impersonate Claude Code
+- Replaces "OpenCode" strings to evade server detection
+
+**From Anthropic's Usage Policy:**
+> "Do Not Abuse our Platform: Intentionally bypass capabilities, restrictions, or guardrails established within our products without prior authorization from Anthropic"
+
+**Risks:**
+- 🚫 **Account ban** - Your Claude account can be suspended
+- ⚠️ You can request an unban via X/Twitter, but it's not guaranteed
+- 🔄 Anthropic could block this workaround at any time
+
+**If you still want to use it (at your own risk):**
 
 ```json
 {
@@ -650,16 +966,9 @@ To enable it, add this to your `opencode.json`:
 }
 ```
 
-**What this does:**
-- Allows OpenCode to authenticate using your Claude Max/Pro subscription
-- No separate API keys needed
-- Full access to Claude Sonnet 4 and other models
+**We do NOT recommend this approach.** Use Claude Code CLI or OpenCode with an API key instead.
 
-> **Stability warning:** This workaround is stable *for now*, but Anthropic could block it at any time. If you need guaranteed long-term stability, use Claude Code CLI instead.
-
-**Location:** `~/.config/opencode/opencode.json`
-
-If you prefer OpenCode over Claude Code CLI, this is the way to go (at your own risk).
+</details>
 
 ## Contributing
 

@@ -18,7 +18,7 @@
       
       # ─── User Configuration ───
       # Change this to your macOS username
-      username = "YourUser";
+      username = "alanbuscaglia";
 
       # Function to create home configuration for a specific system
       mkHomeConfiguration = system:
@@ -56,10 +56,12 @@
             ./oil-scripts.nix  # Oil.nvim scripts configuration
             ./opencode.nix  # OpenCode AI assistant configuration
             ./claude.nix  # Claude Code CLI configuration
+            ./engram.nix  # Engram memory layer for AI agents
             ./yabai.nix  # Yabai window manager configuration
             ./skhd.nix  # Skhd hotkey daemon configuration
             # ./simple-bar.nix  # simple-bar for Übersicht (disabled - using sketchybar)
             ./sketchybar.nix  # SketchyBar status bar
+            ./raycast.nix  # Raycast scripts
             {
               # Personal data
               home.username = "wilmerhenao";  # Replace with your username
@@ -78,7 +80,7 @@
                 # ─── Window management (macOS) ───
                 yabai
                 skhd
-                sketchybar
+                unstablePkgs.sketchybar  # Use unstable for latest version
 
                 # ─── Development tools ───
                 volta
