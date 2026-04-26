@@ -188,19 +188,20 @@
       "url": "https://mcp.context7.com/mcp"
     },
     "engram": {
-      "command": [
-        "engram",
-        "mcp",
-        "--tools=agent"
-      ],
+      "command": ["engram", "mcp", "--tools=agent"],
       "enabled": true,
       "type": "local"
     },
     "notion": {
-      "enabled": true,
+      "enabled": false,
       "timeout": 5000,
       "type": "remote",
       "url": "https://mcp.notion.com/mcp"
+    },
+    "figma": {
+      "type": "local",
+      "command": ["npx", "-y", "mcp-figma"],
+      "enabled": true
     }
   },
   "permission": {
@@ -223,8 +224,5 @@
       "*.env.*": "deny"
     }
   },
-  "plugin": [
-    "opencode-anthropic-login-via-cli",
-    "opencode-gemini-auth@latest"
-  ]
+  "plugin": ["opencode-anthropic-login-via-cli", "opencode-gemini-auth@latest"]
 }
