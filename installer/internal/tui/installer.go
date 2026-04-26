@@ -916,6 +916,9 @@ func stepInstallWM(m *Model) error {
 			SendLog(stepID, "Warning: TPM plugin installation did not complete automatically")
 			SendLog(stepID, "Run manually: bash ~/.tmux/plugins/tpm/bin/install_plugins")
 		}
+		if m.SystemInfo.IsTermux {
+			patchTermuxTmuxKanagawaCPU(stepID, homeDir)
+		}
 		SendLog(stepID, "✓ Tmux configured")
 
 	case "zellij":
@@ -1269,4 +1272,134 @@ fi
 	SendLog(stepID, fmt.Sprintf("✓ Default shell set to %s", shell))
 	SendLog(stepID, "Log out and log back in for changes to take effect")
 	return nil
+}
+
+func patchTermuxTmuxKanagawaCPU(stepID, homeDir string) {
+	scriptPath := filepath.Join(homeDir, ".tmux", "plugins", "tmux-kanagawa", "scripts", "cpu_info.sh")
+	if _, err := os.Stat(scriptPath); err != nil {
+		SendLog(stepID, "Warning: tmux-kanagawa CPU script not found, skipping Termux CPU patch")
+		return
+	}
+
+	const termuxCPUInfoScript = `#!/usr/bin/env bash
+# setting the locale, some users have issues with different locales, this forces the correct one
+export LC_ALL=en_US.UTF-8
+
+current_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$current_dir/utils.sh"
+
+get_percent() {
+  case $(uname -s) in
+  Linux)
+    if [ -n "$TERMUX_VERSION" ] || [ -d /data/data/com.termux ]; then
+      cpu_sum=$(ps -A -o %cpu 2>/dev/null | awk 'NR>1 {s+=$1} END {printf "%.1f", s}')
+      cores=$(nproc 2>/dev/null)
+      if [ -z "$cores" ] || [ "$cores" -le 0 ]; then
+        cores=1
+      fi
+      percent=$(awk -v sum="$cpu_sum" -v cores="$cores" 'BEGIN {
+        if (cores > 0) {
+          p = sum / cores;
+          if (p < 0) p = 0;
+          if (p > 100) p = 100;
+          printf "%.1f%%", p;
+        } else {
+          printf "0.0%%";
+        }
+      }')
+
+    elif [ -r /proc/stat ]; then
+      cpu_sample_1=$(awk '/^cpu / {print $2, $3, $4, $5, $6, $7, $8, $9}' /proc/stat)
+      sleep 1
+      cpu_sample_2=$(awk '/^cpu / {print $2, $3, $4, $5, $6, $7, $8, $9}' /proc/stat)
+
+      percent=$(awk -v s1="$cpu_sample_1" -v s2="$cpu_sample_2" 'BEGIN {
+        split(s1, a, " ");
+        split(s2, b, " ");
+
+        idle1 = a[4] + a[5];
+        idle2 = b[4] + b[5];
+
+        total1 = 0;
+        total2 = 0;
+        for (i = 1; i <= 8; i++) {
+          total1 += a[i];
+          total2 += b[i];
+        }
+
+        totald = total2 - total1;
+        idled = idle2 - idle1;
+
+        if (totald > 0) {
+          printf "%.1f%%", ((totald - idled) * 100) / totald;
+        } else {
+          printf "0.0%%";
+        }
+      }')
+    else
+      percent="0.0%"
+    fi
+
+    normalize_percent_len "$percent"
+    ;;
+
+  Darwin)
+    cpuvalue=$(ps -A -o %cpu | awk -F. '{s+=$1} END {print s}')
+    cpucores=$(sysctl -n hw.logicalcpu)
+    cpuusage=$((cpuvalue / cpucores))
+    percent="$cpuusage%"
+    normalize_percent_len "$percent"
+    ;;
+
+  OpenBSD)
+    cpuvalue=$(ps -A -o %cpu | awk -F. '{s+=$1} END {print s}')
+    cpucores=$(sysctl -n hw.ncpuonline)
+    cpuusage=$((cpuvalue / cpucores))
+    percent="$cpuusage%"
+    normalize_percent_len "$percent"
+    ;;
+
+  CYGWIN* | MINGW32* | MSYS* | MINGW*)
+    # TODO - windows compatability
+    ;;
+  esac
+}
+
+get_load() {
+  case $(uname -s) in
+  Linux | Darwin | OpenBSD)
+    loadavg=$(uptime | awk -F'[a-z]:' '{ print $2}' | sed 's/,//g')
+    echo $loadavg
+    ;;
+
+  CYGWIN* | MINGW32* | MSYS* | MINGW*)
+    # TODO - windows compatability
+    ;;
+  esac
+}
+
+main() {
+  # storing the refresh rate in the variable RATE, default is 5
+  RATE=$(get_tmux_option "@ukiyo-refresh-rate" 5)
+  cpu_load=$(get_tmux_option "@ukiyo-cpu-display-load" false)
+  cpu_label=$(get_tmux_option "@ukiyo-cpu-usage-label" "CPU")
+  if [ "$cpu_load" = true ]; then
+    echo "$cpu_label $(get_load)"
+  else
+    cpu_percent=$(get_percent)
+    echo "$cpu_label $cpu_percent"
+  fi
+  sleep $RATE
+}
+
+# run main driver
+main
+`
+
+	if err := os.WriteFile(scriptPath, []byte(termuxCPUInfoScript), 0755); err != nil {
+		SendLog(stepID, "Warning: Failed to patch tmux CPU percentage for Termux")
+		return
+	}
+
+	SendLog(stepID, "✓ Patched tmux CPU script for Termux percentage support")
 }
