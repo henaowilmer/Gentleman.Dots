@@ -1,11 +1,15 @@
 return {
   "saghen/blink.cmp",
-  enabled = false,
   lazy = true,
-  dependencies = { "saghen/blink.compat", "saghen/blink.lib" },
+  dependencies = { "saghen/blink.compat" },
   opts = {
     sources = {
       default = { "avante_commands", "avante_mentions", "avante_files" },
+      per_filetype = {
+        sql = { "snippets", "dadbod", "buffer" },
+        mysql = { "snippets", "dadbod", "buffer" },
+        plsql = { "snippets", "dadbod", "buffer" },
+      },
       compat = {
         "avante_commands",
         "avante_mentions",
@@ -30,6 +34,11 @@ return {
           module = "blink.compat.source",
           score_offset = 1000,
           opts = {},
+        },
+        dadbod = {
+          name = "Dadbod",
+          module = "vim_dadbod_completion.blink",
+          score_offset = 85,
         },
       },
     },

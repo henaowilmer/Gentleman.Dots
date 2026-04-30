@@ -9,6 +9,7 @@ return {
 
   keys = {
     { "-", "<CMD>Oil<CR>", desc = "Open Oil (parent dir)" },
+    { "<leader>e", "<CMD>Oil<CR>", desc = "Open Oil file explorer" },
     { "<leader>E", "<CMD>Oil --float<CR>", desc = "Open Oil (floating)" },
   },
 
