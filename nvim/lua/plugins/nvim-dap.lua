@@ -26,6 +26,27 @@ return {
 
     -- Keybindings for nvim-dap
     keys = {
+      { "<leader>d", false, mode = { "n", "v" } },
+      { "<leader>dB", false },
+      { "<leader>db", false },
+      { "<leader>dc", false },
+      { "<leader>da", false },
+      { "<leader>dC", false },
+      { "<leader>dg", false },
+      { "<leader>di", false },
+      { "<leader>dj", false },
+      { "<leader>dk", false },
+      { "<leader>dl", false },
+      { "<leader>do", false },
+      { "<leader>dO", false },
+      { "<leader>dp", false },
+      { "<leader>dr", false },
+      { "<leader>ds", false },
+      { "<leader>dt", false },
+      { "<leader>dw", false },
+      { "<leader>dP", false },
+      { "<leader>du", false },
+      { "<leader>de", false, mode = { "n", "x" } },
       { "<leader>D", "", desc = "+debug", mode = { "n", "v" } }, -- Group for debug commands
       {
         "<leader>DB",
@@ -208,5 +229,14 @@ return {
         config.env = load_env_variables
       end
     end,
+  },
+  {
+    "rcarriga/nvim-dap-ui",
+    keys = {
+      { "<leader>du", false },
+      { "<leader>de", false, mode = { "n", "x" } },
+      { "<leader>Du", function() require("dapui").toggle({}) end, desc = "Dap UI" },
+      { "<leader>De", function() require("dapui").eval() end, desc = "Eval", mode = { "n", "x" } },
+    },
   },
 }

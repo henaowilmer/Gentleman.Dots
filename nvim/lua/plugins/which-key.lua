@@ -28,4 +28,11 @@ return {
       group = "Obsidian",
     },
   },
+
+  opts = {
+    spec = {
+      { "<leader>d", group = "database" },
+      { "<leader>D", group = "debug" },
+    },
+  },
 }
