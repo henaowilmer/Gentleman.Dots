@@ -212,6 +212,8 @@ return {
         keys = { { "<leader>z", "<cmd>ZenMode<cr>", desc = "Zen Mode" } }, -- Keybinding to toggle Zen Mode
       },
       dashboard = {
+        width = 45,
+        pane_gap = 2,
         sections = {
           { section = "header", pane = 1 },
           { icon = " ", title = "Keymaps", section = "keys", indent = 2, padding = 1, pane = 2 },
