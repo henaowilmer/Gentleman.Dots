@@ -181,6 +181,11 @@
     }
   },
   "autoupdate": true,
+  "experimental": {
+    "quotaToast": {
+      "enableToast": false
+    }
+  },
   "mcp": {
     "context7": {
       "enabled": true,
@@ -224,5 +229,9 @@
       "*.env.*": "deny"
     }
   },
-  "plugin": ["opencode-anthropic-login-via-cli", "opencode-gemini-auth@latest"]
+  "plugin": [
+    "opencode-anthropic-login-via-cli",
+    "opencode-gemini-auth@latest",
+    "@slkiser/opencode-quota"
+  ]
 }

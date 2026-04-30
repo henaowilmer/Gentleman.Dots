@@ -272,7 +272,20 @@ return {
                         { icon = " ", key = "r", desc = "Recent Files", action = ":lua Snacks.dashboard.pick('oldfiles')" },
                         { icon = " ", key = "c", desc = "Config", action = ":lua Snacks.dashboard.pick('files', {cwd = vim.fn.stdpath('config')})" },
                         { icon = " ", key = "s", desc = "Restore Session", section = "session" },
-                        { icon = " ", key = "x", desc = "Lazy Extras", action = ":LazyExtras" },
+                        {
+                          icon = "󰆼 ",
+                          key = "d",
+                          desc = "Dadbod UI",
+                          action = function(self)
+                            local dashboard_buf = self and self.buf or vim.api.nvim_get_current_buf()
+                            vim.cmd("DBUIToggle")
+                            vim.schedule(function()
+                              if dashboard_buf and vim.api.nvim_buf_is_valid(dashboard_buf) then
+                                pcall(vim.api.nvim_buf_delete, dashboard_buf, { force = true })
+                              end
+                            end)
+                          end,
+                        },
                         { icon = "󰒲 ", key = "l", desc = "Lazy", action = ":Lazy" },
                         { icon = " ", key = "q", desc = "Quit", action = ":qa" },
                     },
