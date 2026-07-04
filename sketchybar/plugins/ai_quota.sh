@@ -24,6 +24,7 @@ QUOTA_BIN="${OPENCODE_QUOTA_BIN:-$HOME/.config/opencode/node_modules/.bin/openco
 JQ_BIN="$(command -v jq 2>/dev/null || true)"
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/sketchybar"
 CACHE_FILE="$CACHE_DIR/ai_quota_${MODE}.state"
+DETAIL_CACHE_FILE="$CACHE_DIR/ai_quota_${MODE}.detail"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 read_cache() {
@@ -37,6 +38,21 @@ write_cache() {
   local label="$2"
   mkdir -p "$CACHE_DIR" 2>/dev/null || true
   printf '%s|%s\n' "$color" "$label" > "$CACHE_FILE" 2>/dev/null || true
+}
+
+read_detail_cache() {
+  if [ -f "$DETAIL_CACHE_FILE" ]; then
+    cat "$DETAIL_CACHE_FILE" 2>/dev/null
+  fi
+}
+
+write_detail_cache() {
+  local detail="$1"
+  if [ -z "$detail" ]; then
+    return
+  fi
+  mkdir -p "$CACHE_DIR" 2>/dev/null || true
+  printf '%s\n' "$detail" > "$DETAIL_CACHE_FILE" 2>/dev/null || true
 }
 
 set_item() {
@@ -77,11 +93,25 @@ show_detail_box() {
   local message="$1"
   local provider_name="$2"
   local now
+  local full_message
   if [ "$REFRESHING" -eq 1 ]; then
     now="$(date '+%H:%M:%S')"
-    sketchybar --set ai_detail drawing=on label="${provider_name}: ${message} (${now})" label.color="$WHITE" >/dev/null 2>&1 || true
+    full_message="${provider_name}: ${message} (${now})"
+    sketchybar --set ai_detail drawing=on label="$full_message" label.color="$WHITE" >/dev/null 2>&1 || true
+    write_detail_cache "$full_message"
     "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
   fi
+}
+
+show_cached_detail_box() {
+  local cached
+  cached="$(read_detail_cache)"
+  if [ "$REFRESHING" -eq 1 ] && [ -n "$cached" ]; then
+    sketchybar --set ai_detail drawing=on label="$cached" label.color="$WHITE" >/dev/null 2>&1 || true
+    "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
+    return 0
+  fi
+  return 1
 }
 
 show_unavailable_detail() {
@@ -92,6 +122,53 @@ show_unavailable_detail() {
     sketchybar --set ai_detail drawing=on label="${provider_name}: unavailable (rate limit/network) (${now})" label.color="$YELLOW" >/dev/null 2>&1 || true
     "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
   fi
+}
+
+show_cached_detail_for_provider() {
+  local provider_name="$1"
+  local now
+  local openai_detail
+  local claude_detail
+  local copilot_detail
+
+  case "$provider_name" in
+    "Claude")
+      claude_detail="$(cat "$CACHE_DIR/ai_quota_claude.detail" 2>/dev/null || true)"
+      if [ -n "$claude_detail" ]; then
+        sketchybar --set ai_detail drawing=on label="$claude_detail" label.color="$WHITE" >/dev/null 2>&1 || true
+        "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
+        return 0
+      fi
+
+      openai_detail="$(cat "$CACHE_DIR/ai_quota_openai.detail" 2>/dev/null || true)"
+      if [ -n "$openai_detail" ]; then
+        now="$(date '+%H:%M:%S')"
+        sketchybar --set ai_detail drawing=on label="Claude: using cached OpenAI detail (${now})" label.color="$YELLOW" >/dev/null 2>&1 || true
+        "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
+        return 0
+      fi
+      ;;
+
+    "OpenAI")
+      openai_detail="$(cat "$CACHE_DIR/ai_quota_openai.detail" 2>/dev/null || true)"
+      if [ -n "$openai_detail" ]; then
+        sketchybar --set ai_detail drawing=on label="$openai_detail" label.color="$WHITE" >/dev/null 2>&1 || true
+        "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
+        return 0
+      fi
+      ;;
+
+    "Copilot")
+      copilot_detail="$(cat "$CACHE_DIR/ai_quota_copilot.detail" 2>/dev/null || true)"
+      if [ -n "$copilot_detail" ]; then
+        sketchybar --set ai_detail drawing=on label="$copilot_detail" label.color="$WHITE" >/dev/null 2>&1 || true
+        "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
+        return 0
+      fi
+      ;;
+  esac
+
+  return 1
 }
 
 set_fallback() {
@@ -357,6 +434,7 @@ case "$MODE" in
 
     set_item "$WHITE" "$OPENAI_MAIN_LABEL" "$COLOR"
 
+    write_detail_cache "OpenAI: 5h ${OPENAI_5H}% (${OPENAI_5H_RESET}) | weekly ${OPENAI_7D}% (${OPENAI_7D_RESET})"
     show_detail_box "5h ${OPENAI_5H}% (${OPENAI_5H_RESET}) | weekly ${OPENAI_7D}% (${OPENAI_7D_RESET})" "OpenAI"
     ;;
 
@@ -449,7 +527,9 @@ case "$MODE" in
     fi
 
     if [ "$CLAUDE_5H" = "--" ] && [ "$CLAUDE_WEEKLY" = "--" ]; then
-      show_unavailable_detail "Claude"
+      if ! show_cached_detail_for_provider "Claude"; then
+        show_unavailable_detail "Claude"
+      fi
       set_fallback
       exit 0
     fi
@@ -464,6 +544,7 @@ case "$MODE" in
 
     set_item "$ORANGE" "$CLAUDE_LABEL" "$COLOR"
 
+    write_detail_cache "Claude: 5h ${CLAUDE_5H}% (${CLAUDE_5H_RESET}) | weekly ${CLAUDE_WEEKLY}% (${CLAUDE_WEEKLY_RESET})"
     show_detail_box "5h ${CLAUDE_5H}% (${CLAUDE_5H_RESET}) | weekly ${CLAUDE_WEEKLY}% (${CLAUDE_WEEKLY_RESET})" "Claude"
     ;;
 
@@ -480,6 +561,7 @@ case "$MODE" in
 
     COLOR="$(pick_color_by_pct "$COPILOT_PCT")"
     set_item "$COPILOT_BLUE" "${COPILOT_PCT}%" "$COLOR"
+    write_detail_cache "Copilot: monthly ${COPILOT_PCT}% (${COPILOT_RESET})"
     show_detail_box "monthly ${COPILOT_PCT}% (${COPILOT_RESET})" "Copilot"
     ;;
 
