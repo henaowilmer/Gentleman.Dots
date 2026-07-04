@@ -92,7 +92,6 @@
                 # yabai, skhd, and sketchybar are installed via Homebrew modules.
 
                 # ─── Development tools ───
-                volta
                 carapace
                 zoxide
                 atuin
