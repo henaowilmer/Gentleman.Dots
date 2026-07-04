@@ -1,20 +1,26 @@
 # skhd configuration migrated from AeroSpace
 
-# Focus windows (alt + ctrl + hjkl) - stay in current space
-alt + ctrl - h : yabai -m window --focus west
-alt + ctrl - j : yabai -m window --focus south
-alt + ctrl - k : yabai -m window --focus north
-alt + ctrl - l : yabai -m window --focus east
+# Floating snap layout (alt + ctrl / alt + shift combos)
+# Keep other tiled windows untouched: force focused window to floating (only if needed), then snap it.
+alt + ctrl - j : yabai -m query --windows --window | jq -e '."is-floating"' >/dev/null || yabai -m window --toggle float; yabai -m window --grid 2:1:0:1:1:1
+alt + ctrl - k : yabai -m query --windows --window | jq -e '."is-floating"' >/dev/null || yabai -m window --toggle float; yabai -m window --grid 2:1:0:0:1:1
+alt + shift - h : yabai -m query --windows --window | jq -e '."is-floating"' >/dev/null || yabai -m window --toggle float; yabai -m window --grid 2:2:0:1:1:1
+alt + shift - l : yabai -m query --windows --window | jq -e '."is-floating"' >/dev/null || yabai -m window --toggle float; yabai -m window --grid 2:2:1:1:1:1
+alt + shift + ctrl - h : yabai -m query --windows --window | jq -e '."is-floating"' >/dev/null || yabai -m window --toggle float; yabai -m window --grid 2:2:0:0:1:1
+alt + shift + ctrl - l : yabai -m query --windows --window | jq -e '."is-floating"' >/dev/null || yabai -m window --toggle float; yabai -m window --grid 2:2:1:0:1:1
+alt + ctrl - h : yabai -m query --windows --window | jq -e '."is-floating"' >/dev/null || yabai -m window --toggle float; yabai -m window --grid 1:2:0:0:1:1
+alt + ctrl - l : yabai -m query --windows --window | jq -e '."is-floating"' >/dev/null || yabai -m window --toggle float; yabai -m window --grid 1:2:1:0:1:1
+alt + ctrl - return : yabai -m query --windows --window | jq -e '."is-floating"' >/dev/null || yabai -m window --toggle float; yabai -m window --grid 1:1:0:0:1:1
 
 # Explicit focus rescue for the current space (alt + ctrl + space)
 # Use this when macOS/yabai leaves focus on the desktop after closing/moving windows.
 alt + ctrl - space : ~/.config/yabai/focus-current-space-window.sh
 
-# Move windows (alt + shift + hjkl)
-alt + shift - h : yabai -m window --swap west
-alt + shift - j : yabai -m window --swap south
-alt + shift - k : yabai -m window --swap north
-alt + shift - l : yabai -m window --swap east
+# Move windows (alt + cmd + hjkl)
+alt + cmd - h : yabai -m window --swap west
+alt + cmd - j : yabai -m window --swap south
+alt + cmd - k : yabai -m window --swap north
+alt + cmd - l : yabai -m window --swap east
 
 # Resize windows (alt + -/=)
 alt - 0x1B : yabai -m window --resize left:-50:0; yabai -m window --resize right:-50:0
@@ -76,4 +82,3 @@ alt + shift - b : yabai -m space --balance
 
 # Toggle floating (alt + ctrl + f)
 alt + ctrl - f : yabai -m window --toggle float
-

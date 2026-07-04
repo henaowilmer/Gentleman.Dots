@@ -31,7 +31,7 @@ export DIM=0xff565f89
 # BAR APPEARANCE (transparent base for floating islands)
 # ─────────────────────────────────────────────────────────────────────────────────
 sketchybar --bar \
-  height=45 \
+  height=25 \
   blur_radius=0 \
   position=top \
   sticky=on \
@@ -77,23 +77,23 @@ sketchybar --default \
 for sid in $(seq 1 10); do
   sketchybar --add space space.$sid left \
     --set space.$sid \
-      space=$sid \
-      icon.drawing=off \
-      label="$sid" \
-      label.padding_left=8 \
-      label.padding_right=8 \
-      label.color=$DIM \
-      label.font="IosevkaTerm NF:Regular:12.0" \
-      padding_left=2 \
-      padding_right=2 \
-      background.color=$ISLAND_BG \
-      background.border_color=$ISLAND_BORDER \
-      background.border_width=1 \
-      background.corner_radius=4 \
-      background.height=24 \
-      background.drawing=on \
-      script="$PLUGIN_DIR/space.sh" \
-      click_script="yabai -m space --focus $sid" \
+    space=$sid \
+    icon.drawing=off \
+    label="$sid" \
+    label.padding_left=8 \
+    label.padding_right=8 \
+    label.color=$DIM \
+    label.font="IosevkaTerm NF:Regular:12.0" \
+    padding_left=2 \
+    padding_right=2 \
+    background.color=$ISLAND_BG \
+    background.border_color=$ISLAND_BORDER \
+    background.border_width=1 \
+    background.corner_radius=4 \
+    background.height=24 \
+    background.drawing=on \
+    script="$PLUGIN_DIR/space.sh" \
+    click_script="yabai -m space --focus $sid" \
     --subscribe space.$sid space_change
 done
 
@@ -102,32 +102,32 @@ done
 # ─────────────────────────────────────────────────────────────────────────────────
 sketchybar --add item separator_left left \
   --set separator_left \
-    icon=">" \
-    icon.color=$ACCENT_COLOR \
-    icon.font="IosevkaTerm NF:Bold:16.0" \
-    icon.padding_left=8 \
-    icon.padding_right=8 \
-    background.drawing=off \
-    label.drawing=off
+  icon=">" \
+  icon.color=$ACCENT_COLOR \
+  icon.font="IosevkaTerm NF:Bold:16.0" \
+  icon.padding_left=8 \
+  icon.padding_right=8 \
+  background.drawing=off \
+  label.drawing=off
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # FRONT APP (current focused app)
 # ─────────────────────────────────────────────────────────────────────────────────
 sketchybar --add item front_app left \
   --set front_app \
-    icon.drawing=off \
-    label.font="IosevkaTerm NF:Bold:12.0" \
-    label.color=$BLACK \
-    label.padding_left=10 \
-    label.padding_right=10 \
-    label.max_chars=16 \
-    scroll_texts=on \
-    background.color=$GREEN \
-    background.border_color=$GREEN \
-    background.border_width=0 \
-    background.corner_radius=4 \
-    background.height=24 \
-    script="$PLUGIN_DIR/front_app.sh" \
+  icon.drawing=off \
+  label.font="IosevkaTerm NF:Bold:12.0" \
+  label.color=$BLACK \
+  label.padding_left=10 \
+  label.padding_right=10 \
+  label.max_chars=16 \
+  scroll_texts=on \
+  background.color=$GREEN \
+  background.border_color=$GREEN \
+  background.border_width=0 \
+  background.corner_radius=4 \
+  background.height=24 \
+  script="$PLUGIN_DIR/front_app.sh" \
   --subscribe front_app front_app_switched
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -140,21 +140,21 @@ sketchybar --add item front_app left \
 # ─────────────────────────────────────────────────────────────────────────────────
 sketchybar --add item battery right \
   --set battery \
-    icon.font="IosevkaTerm NF:Bold:14.0" \
-    icon.color=$GREEN \
-    icon.padding_left=10 \
-    icon.padding_right=4 \
-    label.padding_right=10 \
-    label.width=40 \
-    label.align=right \
-    background.color=$ISLAND_BG \
-    background.border_color=$ISLAND_BORDER \
-    background.border_width=1 \
-    background.corner_radius=4 \
-    background.height=24 \
-    update_freq=60 \
-    script="$PLUGIN_DIR/battery.sh" \
-    click_script="open -a 'System Preferences' /System/Library/PreferencePanes/Battery.prefPane" \
+  icon.font="IosevkaTerm NF:Bold:14.0" \
+  icon.color=$GREEN \
+  icon.padding_left=10 \
+  icon.padding_right=4 \
+  label.padding_right=10 \
+  label.width=40 \
+  label.align=right \
+  background.color=$ISLAND_BG \
+  background.border_color=$ISLAND_BORDER \
+  background.border_width=1 \
+  background.corner_radius=4 \
+  background.height=24 \
+  update_freq=60 \
+  script="$PLUGIN_DIR/battery.sh" \
+  click_script="open -a 'System Preferences' /System/Library/PreferencePanes/Battery.prefPane" \
   --subscribe battery system_woke power_source_change
 
 # ─────────────────────────────────────────────────────────────────────────────────
@@ -162,63 +162,63 @@ sketchybar --add item battery right \
 # ─────────────────────────────────────────────────────────────────────────────────
 sketchybar --add item datetime right \
   --set datetime \
-    icon="CAL" \
-    icon.font="IosevkaTerm NF:Bold:10.0" \
-    icon.color=$YELLOW \
-    icon.padding_left=10 \
-    icon.padding_right=4 \
-    label.padding_right=10 \
-    background.color=$ISLAND_BG \
-    background.border_color=$ISLAND_BORDER \
-    background.border_width=1 \
-    background.corner_radius=4 \
-    background.height=24 \
-    update_freq=30 \
-    script="$PLUGIN_DIR/datetime.sh" \
-    click_script="open -a Calendar"
+  icon="CAL" \
+  icon.font="IosevkaTerm NF:Bold:10.0" \
+  icon.color=$YELLOW \
+  icon.padding_left=10 \
+  icon.padding_right=4 \
+  label.padding_right=10 \
+  background.color=$ISLAND_BG \
+  background.border_color=$ISLAND_BORDER \
+  background.border_width=1 \
+  background.corner_radius=4 \
+  background.height=24 \
+  update_freq=30 \
+  script="$PLUGIN_DIR/datetime.sh" \
+  click_script="open -a Calendar"
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # MEETING (next calendar event)
 # ─────────────────────────────────────────────────────────────────────────────────
 sketchybar --add item meeting right \
   --set meeting \
-    icon="MTG" \
-    icon.font="IosevkaTerm NF:Bold:10.0" \
-    icon.color=$YELLOW \
-    icon.padding_left=10 \
-    icon.padding_right=4 \
-    label.padding_right=10 \
-    label.max_chars=12 \
-    scroll_texts=on \
-    background.color=$ISLAND_BG \
-    background.border_color=$ISLAND_BORDER \
-    background.border_width=1 \
-    background.corner_radius=4 \
-    background.height=24 \
-    update_freq=60 \
-    script="$PLUGIN_DIR/meeting.sh" \
-    click_script="open -a Calendar"
+  icon="MTG" \
+  icon.font="IosevkaTerm NF:Bold:10.0" \
+  icon.color=$YELLOW \
+  icon.padding_left=10 \
+  icon.padding_right=4 \
+  label.padding_right=10 \
+  label.max_chars=12 \
+  scroll_texts=on \
+  background.color=$ISLAND_BG \
+  background.border_color=$ISLAND_BORDER \
+  background.border_width=1 \
+  background.corner_radius=4 \
+  background.height=24 \
+  update_freq=60 \
+  script="$PLUGIN_DIR/meeting.sh" \
+  click_script="open -a Calendar"
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # VOLUME
 # ─────────────────────────────────────────────────────────────────────────────────
 sketchybar --add item volume right \
   --set volume \
-    icon="VOL" \
-    icon.font="IosevkaTerm NF:Bold:10.0" \
-    icon.color=$BLUE \
-    icon.padding_left=10 \
-    icon.padding_right=4 \
-    label.padding_right=10 \
-    label.width=40 \
-    label.align=right \
-    background.color=$ISLAND_BG \
-    background.border_color=$ISLAND_BORDER \
-    background.border_width=1 \
-    background.corner_radius=4 \
-    background.height=24 \
-    script="$PLUGIN_DIR/volume.sh" \
-    click_script="open -a 'System Preferences' /System/Library/PreferencePanes/Sound.prefPane" \
+  icon="VOL" \
+  icon.font="IosevkaTerm NF:Bold:10.0" \
+  icon.color=$BLUE \
+  icon.padding_left=10 \
+  icon.padding_right=4 \
+  label.padding_right=10 \
+  label.width=40 \
+  label.align=right \
+  background.color=$ISLAND_BG \
+  background.border_color=$ISLAND_BORDER \
+  background.border_width=1 \
+  background.corner_radius=4 \
+  background.height=24 \
+  script="$PLUGIN_DIR/volume.sh" \
+  click_script="open -a 'System Preferences' /System/Library/PreferencePanes/Sound.prefPane" \
   --subscribe volume volume_change
 
 # ─────────────────────────────────────────────────────────────────────────────────
@@ -226,67 +226,66 @@ sketchybar --add item volume right \
 # ─────────────────────────────────────────────────────────────────────────────────
 sketchybar --add item cpu right \
   --set cpu \
-    icon="CPU" \
-    icon.font="IosevkaTerm NF:Bold:10.0" \
-    icon.color=$RED \
-    icon.padding_left=10 \
-    icon.padding_right=4 \
-    label.padding_right=10 \
-    label.width=40 \
-    label.align=right \
-    background.color=$ISLAND_BG \
-    background.border_color=$ISLAND_BORDER \
-    background.border_width=1 \
-    background.corner_radius=4 \
-    background.height=24 \
-    update_freq=5 \
-    script="$PLUGIN_DIR/cpu.sh" \
-    click_script="open -a 'Activity Monitor'"
+  icon="CPU" \
+  icon.font="IosevkaTerm NF:Bold:10.0" \
+  icon.color=$RED \
+  icon.padding_left=10 \
+  icon.padding_right=4 \
+  label.padding_right=10 \
+  label.width=40 \
+  label.align=right \
+  background.color=$ISLAND_BG \
+  background.border_color=$ISLAND_BORDER \
+  background.border_width=1 \
+  background.corner_radius=4 \
+  background.height=24 \
+  update_freq=5 \
+  script="$PLUGIN_DIR/cpu.sh" \
+  click_script="open -a 'Activity Monitor'"
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # GPU (Apple Silicon)
 # ─────────────────────────────────────────────────────────────────────────────────
 sketchybar --add item gpu right \
   --set gpu \
-    icon="GPU" \
-    icon.font="IosevkaTerm NF:Bold:10.0" \
-    icon.color=$ORANGE \
-    icon.padding_left=10 \
-    icon.padding_right=4 \
-    label.padding_right=10 \
-    label.width=40 \
-    label.align=right \
-    background.color=$ISLAND_BG \
-    background.border_color=$ISLAND_BORDER \
-    background.border_width=1 \
-    background.corner_radius=4 \
-    background.height=24 \
-    update_freq=10 \
-    script="$PLUGIN_DIR/gpu.sh" \
-    click_script="open -a 'Activity Monitor'"
+  icon="GPU" \
+  icon.font="IosevkaTerm NF:Bold:10.0" \
+  icon.color=$ORANGE \
+  icon.padding_left=10 \
+  icon.padding_right=4 \
+  label.padding_right=10 \
+  label.width=40 \
+  label.align=right \
+  background.color=$ISLAND_BG \
+  background.border_color=$ISLAND_BORDER \
+  background.border_width=1 \
+  background.corner_radius=4 \
+  background.height=24 \
+  update_freq=10 \
+  script="$PLUGIN_DIR/gpu.sh" \
+  click_script="open -a 'Activity Monitor'"
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # RAM
 # ─────────────────────────────────────────────────────────────────────────────────
 sketchybar --add item ram right \
   --set ram \
-    icon="RAM" \
-    icon.font="IosevkaTerm NF:Bold:10.0" \
-    icon.color=$MAGENTA \
-    icon.padding_left=10 \
-    icon.padding_right=4 \
-    label.padding_right=10 \
-    label.width=40 \
-    label.align=right \
-    background.color=$ISLAND_BG \
-    background.border_color=$ISLAND_BORDER \
-    background.border_width=1 \
-    background.corner_radius=4 \
-    background.height=24 \
-    update_freq=10 \
-    script="$PLUGIN_DIR/ram.sh" \
-    click_script="open -a 'Activity Monitor'" \
-  
+  icon="RAM" \
+  icon.font="IosevkaTerm NF:Bold:10.0" \
+  icon.color=$MAGENTA \
+  icon.padding_left=10 \
+  icon.padding_right=4 \
+  label.padding_right=10 \
+  label.width=40 \
+  label.align=right \
+  background.color=$ISLAND_BG \
+  background.border_color=$ISLAND_BORDER \
+  background.border_width=1 \
+  background.corner_radius=4 \
+  background.height=24 \
+  update_freq=10 \
+  script="$PLUGIN_DIR/ram.sh" \
+  click_script="open -a 'Activity Monitor'"
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # FINALIZE
