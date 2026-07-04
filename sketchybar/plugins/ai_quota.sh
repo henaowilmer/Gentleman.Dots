@@ -13,8 +13,23 @@ COPILOT_BLUE=0xff347aff
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin:$HOME/.local/state/nix/profiles/home-manager/home-path/bin:$HOME/.nix-profile/bin"
 
 MODE="${1:-openai}"
-ACTION="${2:-auto}"
+ACTION="auto"
+WINDOW="primary"
 REFRESHING=0
+
+for arg in "${@:2}"; do
+  case "$arg" in
+    click)
+      ACTION="click"
+      ;;
+    weekly|secondary)
+      WINDOW="weekly"
+      ;;
+    primary|5h)
+      WINDOW="primary"
+      ;;
+  esac
+done
 
 if [ "$ACTION" = "click" ]; then
   REFRESHING=1
@@ -23,7 +38,7 @@ fi
 QUOTA_BIN="${OPENCODE_QUOTA_BIN:-$HOME/.config/opencode/node_modules/.bin/opencode-quota}"
 JQ_BIN="$(command -v jq 2>/dev/null || true)"
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/sketchybar"
-CACHE_FILE="$CACHE_DIR/ai_quota_${MODE}.state"
+CACHE_FILE="$CACHE_DIR/ai_quota_${MODE}_${WINDOW}.state"
 DETAIL_CACHE_FILE="$CACHE_DIR/ai_quota_${MODE}.detail"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -44,6 +59,51 @@ read_detail_cache() {
   if [ -f "$DETAIL_CACHE_FILE" ]; then
     cat "$DETAIL_CACHE_FILE" 2>/dev/null
   fi
+}
+
+mode_source_item() {
+  case "$MODE" in
+    openai)
+      printf -- "openai_quota"
+      ;;
+    anthropic|claude)
+      printf -- "claude_quota"
+      ;;
+    copilot)
+      printf -- "copilot_quota"
+      ;;
+    *)
+      printf -- ""
+      ;;
+  esac
+}
+
+set_detail_with_source_style() {
+  local message="$1"
+  local source_item
+  local icon_value
+  local icon_color
+  local icon_font
+
+  source_item="$(mode_source_item)"
+  icon_value=""
+  icon_color="$WHITE"
+  icon_font="IosevkaTerm NF:Bold:14.0"
+
+  if [ -n "$source_item" ]; then
+    icon_value="$(sketchybar --query "$source_item" 2>/dev/null | "$JQ_BIN" -r '.icon.value // empty' 2>/dev/null)"
+    icon_color="$(sketchybar --query "$source_item" 2>/dev/null | "$JQ_BIN" -r '.icon.color // empty' 2>/dev/null)"
+    icon_font="$(sketchybar --query "$source_item" 2>/dev/null | "$JQ_BIN" -r '.icon.font // empty' 2>/dev/null)"
+  fi
+
+  if [ -z "$icon_color" ]; then
+    icon_color="$WHITE"
+  fi
+  if [ -z "$icon_font" ]; then
+    icon_font="IosevkaTerm NF:Bold:14.0"
+  fi
+
+  sketchybar --set ai_detail drawing=on icon.drawing=on icon="$icon_value" icon.color="$icon_color" icon.font="$icon_font" label="$message" label.color="$WHITE" >/dev/null 2>&1 || true
 }
 
 write_detail_cache() {
@@ -91,14 +151,9 @@ show_refresh_feedback() {
 
 show_detail_box() {
   local message="$1"
-  local provider_name="$2"
-  local now
-  local full_message
   if [ "$REFRESHING" -eq 1 ]; then
-    now="$(date '+%H:%M:%S')"
-    full_message="${provider_name}: ${message} (${now})"
-    sketchybar --set ai_detail drawing=on label="$full_message" label.color="$WHITE" >/dev/null 2>&1 || true
-    write_detail_cache "$full_message"
+    set_detail_with_source_style "$message"
+    write_detail_cache "$message"
     "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
   fi
 }
@@ -107,7 +162,7 @@ show_cached_detail_box() {
   local cached
   cached="$(read_detail_cache)"
   if [ "$REFRESHING" -eq 1 ] && [ -n "$cached" ]; then
-    sketchybar --set ai_detail drawing=on label="$cached" label.color="$WHITE" >/dev/null 2>&1 || true
+    set_detail_with_source_style "$cached"
     "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
     return 0
   fi
@@ -115,60 +170,12 @@ show_cached_detail_box() {
 }
 
 show_unavailable_detail() {
-  local provider_name="$1"
-  local now
+  local message="$1"
   if [ "$REFRESHING" -eq 1 ]; then
-    now="$(date '+%H:%M:%S')"
-    sketchybar --set ai_detail drawing=on label="${provider_name}: unavailable (rate limit/network) (${now})" label.color="$YELLOW" >/dev/null 2>&1 || true
+    set_detail_with_source_style "$message"
+    sketchybar --set ai_detail label.color="$YELLOW" >/dev/null 2>&1 || true
     "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
   fi
-}
-
-show_cached_detail_for_provider() {
-  local provider_name="$1"
-  local now
-  local openai_detail
-  local claude_detail
-  local copilot_detail
-
-  case "$provider_name" in
-    "Claude")
-      claude_detail="$(cat "$CACHE_DIR/ai_quota_claude.detail" 2>/dev/null || true)"
-      if [ -n "$claude_detail" ]; then
-        sketchybar --set ai_detail drawing=on label="$claude_detail" label.color="$WHITE" >/dev/null 2>&1 || true
-        "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
-        return 0
-      fi
-
-      openai_detail="$(cat "$CACHE_DIR/ai_quota_openai.detail" 2>/dev/null || true)"
-      if [ -n "$openai_detail" ]; then
-        now="$(date '+%H:%M:%S')"
-        sketchybar --set ai_detail drawing=on label="Claude: using cached OpenAI detail (${now})" label.color="$YELLOW" >/dev/null 2>&1 || true
-        "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
-        return 0
-      fi
-      ;;
-
-    "OpenAI")
-      openai_detail="$(cat "$CACHE_DIR/ai_quota_openai.detail" 2>/dev/null || true)"
-      if [ -n "$openai_detail" ]; then
-        sketchybar --set ai_detail drawing=on label="$openai_detail" label.color="$WHITE" >/dev/null 2>&1 || true
-        "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
-        return 0
-      fi
-      ;;
-
-    "Copilot")
-      copilot_detail="$(cat "$CACHE_DIR/ai_quota_copilot.detail" 2>/dev/null || true)"
-      if [ -n "$copilot_detail" ]; then
-        sketchybar --set ai_detail drawing=on label="$copilot_detail" label.color="$WHITE" >/dev/null 2>&1 || true
-        "$SCRIPT_DIR/ai_detail_clear.sh" >/dev/null 2>&1 &
-        return 0
-      fi
-      ;;
-  esac
-
-  return 1
 }
 
 set_fallback() {
@@ -179,6 +186,8 @@ set_fallback() {
   local current_color
   local current_label_color
   local fixed_icon_color
+  local fallback_label_color
+  local pct_value
 
   fixed_icon_color="$(mode_icon_color)"
 
@@ -197,8 +206,20 @@ set_fallback() {
         *" | "*) cached_label="" ;;
       esac
     fi
+    if [ "$WINDOW" = "weekly" ] && { [ "$MODE" = "openai" ] || [ "$MODE" = "claude" ] || [ "$MODE" = "anthropic" ]; }; then
+      cached_label="${cached_label#| }"
+      cached_label="${cached_label#|}"
+    fi
     if [ -n "$cached_color" ] && [ -n "$cached_label" ] && [ "$cached_label" != "$cached" ]; then
-      sketchybar --set "$NAME" icon.color="${fixed_icon_color:-$cached_color}" label="$cached_label" label.color="${current_label_color:-$WHITE}"
+      fallback_label_color="${current_label_color:-$WHITE}"
+      if [ "$MODE" = "openai" ] || [ "$MODE" = "claude" ] || [ "$MODE" = "anthropic" ]; then
+        pct_value="${cached_label%%%}"
+        case "$pct_value" in
+          ''|*[!0-9]*) ;;
+          *) fallback_label_color="$(pick_color_by_pct "$pct_value")" ;;
+        esac
+      fi
+      sketchybar --set "$NAME" icon.color="${fixed_icon_color:-$cached_color}" label="$cached_label" label.color="$fallback_label_color"
       return
     fi
   fi
@@ -208,19 +229,41 @@ set_fallback() {
       case "$current_label" in
         *" | "*) current_label="" ;;
       esac
+      if [ "$WINDOW" = "weekly" ]; then
+        case "$current_label" in
+          "| "*) current_label="${current_label#| }" ;;
+          "|"*) current_label="${current_label#|}" ;;
+        esac
+      fi
     fi
     if [ -n "$current_label" ] && [ "$current_label" != "--" ]; then
-      sketchybar --set "$NAME" icon.color="${fixed_icon_color:-${current_color:-$DIM}}" label="$current_label" label.color="${current_label_color:-$WHITE}"
+      fallback_label_color="${current_label_color:-$WHITE}"
+      if [ "$MODE" = "openai" ] || [ "$MODE" = "claude" ] || [ "$MODE" = "anthropic" ]; then
+        pct_value="${current_label%%%}"
+        case "$pct_value" in
+          ''|*[!0-9]*) ;;
+          *) fallback_label_color="$(pick_color_by_pct "$pct_value")" ;;
+        esac
+      fi
+      sketchybar --set "$NAME" icon.color="${fixed_icon_color:-${current_color:-$DIM}}" label="$current_label" label.color="$fallback_label_color"
       return
     fi
   fi
 
   case "$MODE" in
     openai)
-      sketchybar --set "$NAME" icon.color="$WHITE" label="--" label.color="$DIM"
+      if [ "$WINDOW" = "weekly" ]; then
+        sketchybar --set "$NAME" icon.color="$WHITE" label="--" label.color="$DIM"
+      else
+        sketchybar --set "$NAME" icon.color="$WHITE" label="--" label.color="$DIM"
+      fi
       ;;
     anthropic|claude)
-      sketchybar --set "$NAME" icon.color="$ORANGE" label="--" label.color="$DIM"
+      if [ "$WINDOW" = "weekly" ]; then
+        sketchybar --set "$NAME" icon.color="$ORANGE" label="--" label.color="$DIM"
+      else
+        sketchybar --set "$NAME" icon.color="$ORANGE" label="--" label.color="$DIM"
+      fi
       ;;
     copilot)
       sketchybar --set "$NAME" icon.color="$COPILOT_BLUE" label="--" label.color="$DIM"
@@ -415,27 +458,44 @@ case "$MODE" in
     OPENAI_7D_RESET="$(fmt_reset_remaining "$OPENAI_7D_RESET_RAW")"
 
     if [ "$OPENAI_5H" = "--" ] && [ "$OPENAI_7D" = "--" ]; then
+      sketchybar --set openai_quota_weekly label="--" label.color="$DIM" >/dev/null 2>&1 || true
       set_fallback
       exit 0
     fi
 
-    COLOR="$GREEN"
-    if [ "$OPENAI_5H" != "--" ]; then
-      COLOR="$(pick_color_by_pct "$OPENAI_5H")"
-    elif [ "$OPENAI_7D" != "--" ]; then
-      COLOR="$(pick_color_by_pct "$OPENAI_7D")"
+    if [ "$WINDOW" = "weekly" ]; then
+      OPENAI_MAIN_VALUE="$OPENAI_7D"
+      OPENAI_MAIN_RESET="$OPENAI_7D_RESET"
+    else
+      OPENAI_MAIN_VALUE="$OPENAI_5H"
+      OPENAI_MAIN_RESET="$OPENAI_5H_RESET"
+      if [ "$OPENAI_MAIN_VALUE" = "--" ]; then
+        OPENAI_MAIN_VALUE="$OPENAI_7D"
+        OPENAI_MAIN_RESET="$OPENAI_7D_RESET"
+      fi
     fi
 
-    if [ "$OPENAI_5H" = "--" ]; then
+    COLOR="$(pick_color_by_pct "$OPENAI_MAIN_VALUE")"
+
+    if [ "$OPENAI_MAIN_VALUE" = "--" ]; then
       OPENAI_MAIN_LABEL="--"
     else
-      OPENAI_MAIN_LABEL="${OPENAI_5H}%"
+      OPENAI_MAIN_LABEL="${OPENAI_MAIN_VALUE}%"
     fi
 
     set_item "$WHITE" "$OPENAI_MAIN_LABEL" "$COLOR"
 
-    write_detail_cache "OpenAI: 5h ${OPENAI_5H}% (${OPENAI_5H_RESET}) | weekly ${OPENAI_7D}% (${OPENAI_7D_RESET})"
-    show_detail_box "5h ${OPENAI_5H}% (${OPENAI_5H_RESET}) | weekly ${OPENAI_7D}% (${OPENAI_7D_RESET})" "OpenAI"
+    OPENAI_WEEKLY_LABEL="--"
+    OPENAI_WEEKLY_COLOR="$DIM"
+    if [ "$OPENAI_7D" != "--" ]; then
+      OPENAI_WEEKLY_LABEL="${OPENAI_7D}%"
+      OPENAI_WEEKLY_COLOR="$(pick_color_by_pct "$OPENAI_7D")"
+    fi
+
+    sketchybar --set openai_quota_weekly label="$OPENAI_WEEKLY_LABEL" label.color="$OPENAI_WEEKLY_COLOR" >/dev/null 2>&1 || true
+
+    write_detail_cache "${OPENAI_5H}% (${OPENAI_5H_RESET}) | ${OPENAI_7D}% (${OPENAI_7D_RESET})"
+    show_detail_box "${OPENAI_5H}% (${OPENAI_5H_RESET}) | ${OPENAI_7D}% (${OPENAI_7D_RESET})"
     ;;
 
   anthropic|claude)
@@ -527,16 +587,26 @@ case "$MODE" in
     fi
 
     if [ "$CLAUDE_5H" = "--" ] && [ "$CLAUDE_WEEKLY" = "--" ]; then
-      if ! show_cached_detail_for_provider "Claude"; then
-        show_unavailable_detail "Claude"
+      sketchybar --set claude_quota_weekly label="--" label.color="$DIM" >/dev/null 2>&1 || true
+      if ! show_cached_detail_box; then
+        show_unavailable_detail "unavailable (rate limit/network)"
       fi
       set_fallback
       exit 0
     fi
 
-    if [ "$CLAUDE_5H" != "--" ]; then
-      COLOR="$(pick_color_by_pct "$CLAUDE_5H")"
-      CLAUDE_LABEL="${CLAUDE_5H}%"
+    if [ "$WINDOW" = "weekly" ]; then
+      CLAUDE_MAIN_VALUE="$CLAUDE_WEEKLY"
+    else
+      CLAUDE_MAIN_VALUE="$CLAUDE_5H"
+      if [ "$CLAUDE_MAIN_VALUE" = "--" ]; then
+        CLAUDE_MAIN_VALUE="$CLAUDE_WEEKLY"
+      fi
+    fi
+
+    if [ "$CLAUDE_MAIN_VALUE" != "--" ]; then
+      COLOR="$(pick_color_by_pct "$CLAUDE_MAIN_VALUE")"
+      CLAUDE_LABEL="${CLAUDE_MAIN_VALUE}%"
     else
       COLOR="$(pick_color_by_pct "$CLAUDE_WEEKLY")"
       CLAUDE_LABEL="${CLAUDE_WEEKLY}%"
@@ -544,8 +614,17 @@ case "$MODE" in
 
     set_item "$ORANGE" "$CLAUDE_LABEL" "$COLOR"
 
-    write_detail_cache "Claude: 5h ${CLAUDE_5H}% (${CLAUDE_5H_RESET}) | weekly ${CLAUDE_WEEKLY}% (${CLAUDE_WEEKLY_RESET})"
-    show_detail_box "5h ${CLAUDE_5H}% (${CLAUDE_5H_RESET}) | weekly ${CLAUDE_WEEKLY}% (${CLAUDE_WEEKLY_RESET})" "Claude"
+    CLAUDE_WEEKLY_LABEL="--"
+    CLAUDE_WEEKLY_COLOR="$DIM"
+    if [ "$CLAUDE_WEEKLY" != "--" ]; then
+      CLAUDE_WEEKLY_LABEL="${CLAUDE_WEEKLY}%"
+      CLAUDE_WEEKLY_COLOR="$(pick_color_by_pct "$CLAUDE_WEEKLY")"
+    fi
+
+    sketchybar --set claude_quota_weekly label="$CLAUDE_WEEKLY_LABEL" label.color="$CLAUDE_WEEKLY_COLOR" >/dev/null 2>&1 || true
+
+    write_detail_cache "${CLAUDE_5H}% (${CLAUDE_5H_RESET}) | ${CLAUDE_WEEKLY}% (${CLAUDE_WEEKLY_RESET})"
+    show_detail_box "${CLAUDE_5H}% (${CLAUDE_5H_RESET}) | ${CLAUDE_WEEKLY}% (${CLAUDE_WEEKLY_RESET})"
     ;;
 
   copilot)
@@ -561,8 +640,8 @@ case "$MODE" in
 
     COLOR="$(pick_color_by_pct "$COPILOT_PCT")"
     set_item "$COPILOT_BLUE" "${COPILOT_PCT}%" "$COLOR"
-    write_detail_cache "Copilot: monthly ${COPILOT_PCT}% (${COPILOT_RESET})"
-    show_detail_box "monthly ${COPILOT_PCT}% (${COPILOT_RESET})" "Copilot"
+    write_detail_cache "${COPILOT_PCT}% (${COPILOT_RESET})"
+    show_detail_box "${COPILOT_PCT}% (${COPILOT_RESET})"
     ;;
 
   *)

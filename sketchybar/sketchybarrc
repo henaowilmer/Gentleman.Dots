@@ -134,9 +134,13 @@ sketchybar --add item front_app left \
 # Detail box for AI quota click refresh (next to focused app)
 sketchybar --add item ai_detail left \
   --set ai_detail \
-  icon.drawing=off \
+  icon.drawing=on \
+  icon.padding_left=8 \
+  icon.padding_right=4 \
+  icon.color=$WHITE \
+  icon.font="IosevkaTerm NF:Bold:14.0" \
   drawing=off \
-  label.font="IosevkaTerm NF:Medium:11.0" \
+  label.font="IosevkaTerm NFM:Medium:13.0" \
   label.color=$WHITE \
   label.padding_left=8 \
   label.padding_right=8 \
@@ -149,7 +153,7 @@ sketchybar --add item ai_detail left \
 # ═══════════════════════════════════════════════════════════════════════════════
 #                                RIGHT SIDE
 # ═══════════════════════════════════════════════════════════════════════════════
-# Visual order (right to left): DateTime | Battery | RAM | CPU | GPU | Copilot | [camera gap] | Claude | OpenAI
+# Visual order (right to left): DateTime | Battery | RAM | CPU | GPU | Copilot | Claude | OpenAI | camera gap
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # DATETIME (rightmost)
@@ -177,6 +181,7 @@ sketchybar --add item battery right \
   icon.color=$GREEN \
   icon.padding_left=8 \
   icon.padding_right=3 \
+  padding_right=0 \
   label.padding_right=6 \
   label.width=34 \
   label.align=right \
@@ -198,16 +203,14 @@ sketchybar --add item ram right \
   icon="RAM" \
   icon.font="IosevkaTerm NF:Bold:10.0" \
   icon.color=$MAGENTA \
-  icon.padding_left=8 \
-  icon.padding_right=3 \
-  label.padding_right=6 \
-  label.width=34 \
+  padding_left=1 \
+  padding_right=1 \
+  icon.padding_left=4 \
+  icon.padding_right=2 \
+  label.padding_right=3 \
+  label.width=28 \
   label.align=right \
-  background.color=$ISLAND_BG \
-  background.border_color=$ISLAND_BORDER \
-  background.border_width=1 \
-  background.corner_radius=4 \
-  background.height=24 \
+  background.drawing=off \
   update_freq=10 \
   script="$PLUGIN_DIR/ram.sh" \
   click_script="open -a 'Activity Monitor'"
@@ -220,16 +223,14 @@ sketchybar --add item cpu right \
   icon="CPU" \
   icon.font="IosevkaTerm NF:Bold:10.0" \
   icon.color=$RED \
-  icon.padding_left=8 \
-  icon.padding_right=3 \
-  label.padding_right=6 \
-  label.width=34 \
+  padding_left=1 \
+  padding_right=1 \
+  icon.padding_left=4 \
+  icon.padding_right=2 \
+  label.padding_right=3 \
+  label.width=28 \
   label.align=right \
-  background.color=$ISLAND_BG \
-  background.border_color=$ISLAND_BORDER \
-  background.border_width=1 \
-  background.corner_radius=4 \
-  background.height=24 \
+  background.drawing=off \
   update_freq=5 \
   script="$PLUGIN_DIR/cpu.sh" \
   click_script="open -a 'Activity Monitor'"
@@ -242,19 +243,28 @@ sketchybar --add item gpu right \
   icon="GPU" \
   icon.font="IosevkaTerm NF:Bold:10.0" \
   icon.color=$ORANGE \
-  icon.padding_left=8 \
-  icon.padding_right=3 \
-  label.padding_right=6 \
-  label.width=34 \
+  padding_left=1 \
+  padding_right=1 \
+  icon.padding_left=4 \
+  icon.padding_right=2 \
+  label.padding_right=3 \
+  label.width=28 \
   label.align=right \
+  background.drawing=off \
+  update_freq=10 \
+  script="$PLUGIN_DIR/gpu.sh" \
+  click_script="open -a 'Activity Monitor'"
+
+# Shared container for RAM/CPU/GPU
+sketchybar --add bracket metrics_box ram cpu gpu \
+  --set metrics_box \
   background.color=$ISLAND_BG \
   background.border_color=$ISLAND_BORDER \
   background.border_width=1 \
   background.corner_radius=4 \
   background.height=24 \
-  update_freq=10 \
-  script="$PLUGIN_DIR/gpu.sh" \
-  click_script="open -a 'Activity Monitor'"
+  background.padding_left=2 \
+  background.padding_right=2
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # ─────────────────────────────────────────────────────────────────────────────────
@@ -288,19 +298,43 @@ sketchybar --add item claude_quota right \
   icon="✴" \
   icon.font="IosevkaTerm NF:Bold:35.0" \
   icon.color=$ORANGE \
-  icon.padding_left=6 \
-  icon.padding_right=2 \
-  label.padding_right=6 \
-  label.width=40 \
+  icon.padding_left=2 \
+  icon.padding_right=1 \
+  label.padding_left=1 \
+  label.padding_right=2 \
+  label.width=30 \
   label.align=right \
   scroll_texts=off \
-  background.color=$ISLAND_BG \
-  background.border_color=$ISLAND_BORDER \
-  background.border_width=1 \
-  background.corner_radius=4 \
-  background.height=24 \
+  background.drawing=off \
   update_freq=60 \
   script="$PLUGIN_DIR/ai_quota.sh claude" \
+  click_script="$PLUGIN_DIR/ai_quota.sh claude click"
+
+sketchybar --add item claude_quota_separator right \
+  --set claude_quota_separator \
+  icon.drawing=off \
+  label="|" \
+  label.color=$DIM \
+  padding_left=-6 \
+  padding_right=-6 \
+  label.padding_left=0 \
+  label.padding_right=1 \
+  label.width=10 \
+  label.align=center \
+  background.drawing=off
+
+sketchybar --add item claude_quota_weekly right \
+  --set claude_quota_weekly \
+  icon.drawing=off \
+  label="--" \
+  label.color=$WHITE \
+  label.padding_left=2 \
+  label.padding_right=2 \
+  label.width=28 \
+  label.align=right \
+  background.drawing=off \
+  update_freq=60 \
+  script="$PLUGIN_DIR/ai_quota.sh claude weekly" \
   click_script="$PLUGIN_DIR/ai_quota.sh claude click"
 
 # ─────────────────────────────────────────────────────────────────────────────────
@@ -311,20 +345,76 @@ sketchybar --add item openai_quota right \
   icon="֎" \
   icon.font="IosevkaTerm NF:Bold:35.0" \
   icon.color=$WHITE \
-  icon.padding_left=6 \
-  icon.padding_right=2 \
-  label.padding_right=6 \
-  label.width=40 \
+  icon.padding_left=2 \
+  icon.padding_right=1 \
+  label.padding_left=1 \
+  label.padding_right=2 \
+  label.width=30 \
   label.align=right \
   scroll_texts=off \
+  background.drawing=off \
+  update_freq=60 \
+  script="$PLUGIN_DIR/ai_quota.sh openai" \
+  click_script="$PLUGIN_DIR/ai_quota.sh openai click"
+
+sketchybar --add item openai_quota_separator right \
+  --set openai_quota_separator \
+  icon.drawing=off \
+  label="|" \
+  label.color=$DIM \
+  padding_left=-6 \
+  padding_right=-6 \
+  label.padding_left=0 \
+  label.padding_right=1 \
+  label.width=10 \
+  label.align=center \
+  background.drawing=off
+
+sketchybar --add item openai_quota_weekly right \
+  --set openai_quota_weekly \
+  icon.drawing=off \
+  label="--" \
+  label.color=$WHITE \
+  label.padding_left=2 \
+  label.padding_right=2 \
+  label.width=28 \
+  label.align=right \
+  background.drawing=off \
+  update_freq=60 \
+  script="$PLUGIN_DIR/ai_quota.sh openai weekly" \
+  click_script="$PLUGIN_DIR/ai_quota.sh openai click"
+
+# Symmetric visual gap between provider boxes
+sketchybar --add item ai_provider_gap right \
+  --set ai_provider_gap \
+  icon.drawing=off \
+  label.drawing=off \
+  background.drawing=off \
+  width=6
+
+# Shared container per provider (5h + weekly in same box)
+sketchybar --add bracket claude_box claude_quota claude_quota_separator claude_quota_weekly \
+  --set claude_box \
   background.color=$ISLAND_BG \
   background.border_color=$ISLAND_BORDER \
   background.border_width=1 \
   background.corner_radius=4 \
-  background.height=24 \
-  update_freq=60 \
-  script="$PLUGIN_DIR/ai_quota.sh openai" \
-  click_script="$PLUGIN_DIR/ai_quota.sh openai click"
+  background.height=24
+
+sketchybar --add bracket openai_box openai_quota openai_quota_separator openai_quota_weekly \
+  --set openai_box \
+  background.color=$ISLAND_BG \
+  background.border_color=$ISLAND_BORDER \
+  background.border_width=1 \
+  background.corner_radius=4 \
+  background.height=24
+
+# Ensure provider order inside each box: icon+5h | weekly
+sketchybar --move claude_quota after claude_quota_weekly
+sketchybar --move claude_quota_separator after claude_quota_weekly
+sketchybar --move openai_quota after openai_quota_weekly
+sketchybar --move openai_quota_separator after openai_quota_weekly
+sketchybar --move ai_provider_gap before openai_quota_weekly
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # CAMERA GAP (MacBook notch spacing)
