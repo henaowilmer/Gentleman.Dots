@@ -7,7 +7,7 @@
 
           # Install Fisher if not installed
           if not functions -q fisher
-              curl -sL https://git.io/fisher | source
+              curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
               fisher install jorgebucaran/fisher
           end
 
@@ -31,15 +31,22 @@
           echo "   /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
       end
 
+      # pnpm 11 links global executables into PNPM_HOME/bin and validates that
+      # directory is on PATH (pnpm 10 used PNPM_HOME directly).
+      set -gx PNPM_HOME $HOME/Library/pnpm
+
+      # CodeGraph bundles a Node runtime that may try to read macOS' legacy
+      # OpenSSL config path. /dev/null avoids that startup failure.
+      if not set -q OPENSSL_CONF
+          set -gx OPENSSL_CONF /dev/null
+      end
+
       # All PATH entries - matching zsh config
-      # Priority: local bins > nix > cargo > volta > bun > homebrew > system
-      set -gx PATH $HOME/.local/bin $HOME/.opencode/bin $HOME/.local/state/nix/profiles/home-manager/home-path/bin $HOME/.nix-profile/bin /nix/var/nix/profiles/default/bin $HOME/.cargo/bin $HOME/.volta/bin $HOME/.bun/bin $PATH
+      # Priority: Pi wrapper > pnpm globals > local bins > nix > cargo > volta > bun > homebrew > system
+      set -gx PATH $HOME/.pi/agent/bin $PNPM_HOME/bin $HOME/.local/bin $HOME/.opencode/bin $HOME/.local/state/nix/profiles/home-manager/home-path/bin $HOME/.nix-profile/bin /nix/var/nix/profiles/default/bin $HOME/.cargo/bin $HOME/.volta/bin $HOME/.bun/bin $PATH
 
       set -gx GPG_TTY (tty)
 
-      if not set -q TMUX; and not set -q ZED_TERMINAL
-          tmux
-      end
       starship init fish | source
       zoxide init fish | source
       atuin init fish | source
@@ -202,6 +209,30 @@
       set -g fish_pager_color_prefix $cyan
       set -g fish_pager_color_completion $foreground
       set -g fish_pager_color_description $comment
+
+      # tmux-style tab naming for Zellij: name a tab after its directory.
+      # Only fires while the tab still has Zellij's default "Tab #N" name, so it
+      # never fights the agent-state rollup, which writes "● agent working" into
+      # the tab name. Effect: the tab adopts the project dir on open/first cd,
+      # then stays put (state dot is appended by zellij-agent-report.sh).
+      function __gm_zellij_autoname_tab --on-variable PWD
+          set -q ZELLIJ; or return
+          set -q ZELLIJ_PANE_ID; or return
+          set -l base (basename "$PWD")
+          test -n "$base"; or return
+          set -l info (zellij action list-panes --json 2>/dev/null)
+          test -n "$info"; or return
+          set -l tabname (printf '%s' "$info" | jq -r --arg p "$ZELLIJ_PANE_ID" '
+              .[] | select((.id|tostring)==$p or ("terminal_"+(.id|tostring))==$p) | .tab_name' 2>/dev/null | head -n1)
+          string match -qr '^Tab #[0-9]+$' -- "$tabname"; or return
+          zellij action rename-tab "$base" >/dev/null 2>&1
+      end
+
+      # Start Herdr automatically for fresh interactive Fish sessions.
+      # Guard against nesting when Fish is already running inside Herdr, tmux, or Zellij.
+      if status is-interactive; and command -q herdr; and not set -q HERDR_ENV; and not set -q TMUX; and not set -q ZELLIJ
+          herdr; or echo "⚠️  Herdr failed to start; continuing in Fish."
+      end
 
       clear
     '';

@@ -1,0 +1,26 @@
+[1]
+monitor = "main"
+
+[2]
+monitor = "main"
+
+[3]
+monitor = "main"
+
+[4]
+monitor = "main"
+
+[5]
+monitor = "main"
+
+[6]
+displayName = "❤️"
+monitor = "specific"
+monitorName = "Elgato Prom."
+monitorDisplayId = 6
+
+[7]
+displayName = "🚀"
+monitor = "specific"
+monitorName = "ARZOPA"
+monitorDisplayId = 5

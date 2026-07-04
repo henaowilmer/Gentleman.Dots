@@ -24,4 +24,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
-.atl
+
+# Local Pi runtime state
+.atl/
+.pi/
