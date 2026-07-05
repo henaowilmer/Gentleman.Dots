@@ -12,7 +12,7 @@
 set -euo pipefail
 
 uid="$(/usr/bin/id -u)"
-label="com.koekeishiya.yabai"
+label="com.asmvik.yabai"
 domain="gui/${uid}"
 plist="$HOME/Library/LaunchAgents/${label}.plist"
 

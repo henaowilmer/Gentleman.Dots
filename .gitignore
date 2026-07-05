@@ -11,6 +11,9 @@ backup
 # OpenCode directory
 .opencode/
 
+# Local CodeGraph index
+.codegraph/
+
 # OS-specific files
 .DS_Store
 Thumbs.db
