@@ -2,11 +2,11 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title Restart SketchyBar
-# @raycast.mode silent
+# @raycast.title Reset SketchyBar
+# @raycast.mode compact
 
 # Optional parameters:
-# @raycast.icon 🔄
+# @raycast.icon 🧰
 # @raycast.packageName System
 
 export PATH="$HOME/.local/state/nix/profiles/home-manager/home-path/bin:$PATH"
@@ -14,4 +14,4 @@ pkill sketchybar
 sleep 1
 sketchybar &
 
-echo "Sketchybar restarted"
+echo "SketchyBar reset"
