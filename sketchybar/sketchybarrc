@@ -82,11 +82,17 @@ sketchybar --default \
 # SPACES (YABAI WORKSPACES) - sector chips, active one glows electric blue
 # ─────────────────────────────────────────────────────────────────────────────────
 for sid in $(seq 1 10); do
+  # Space 2 shows its semantic name; the rest show their number
+  if [ "$sid" -eq 2 ]; then
+    SPACE_LABEL="Dev"
+  else
+    SPACE_LABEL="$(printf '%02d' "$sid")"
+  fi
   sketchybar --add space space.$sid left \
     --set space.$sid \
     space=$sid \
     icon.drawing=off \
-    label="$(printf '%02d' "$sid")" \
+    label="$SPACE_LABEL" \
     label.padding_left=8 \
     label.padding_right=8 \
     label.color=$DIM \

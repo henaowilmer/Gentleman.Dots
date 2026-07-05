@@ -45,7 +45,7 @@ yabai -m config window_gap 4
 # Space 6 (alt+6): Elgato Teleprompter
 # Space 7 (alt+7): Arzopa Portable Monitor
 yabai -m space 1 --label social 2>/dev/null || true
-yabai -m space 2 --label work 2>/dev/null || true
+yabai -m space 2 --label Dev 2>/dev/null || true
 yabai -m space 3 --label development 2>/dev/null || true
 yabai -m space 4 --label others 2>/dev/null || true
 yabai -m space 5 --label five 2>/dev/null || true
