@@ -20,6 +20,7 @@ alt + ctrl - return : yabai -m window --toggle zoom-fullscreen
 # Native BSP layout controls
 # ──────────────────────────────────────────────────────────────────────────────
 alt + ctrl - s : ~/.config/yabai/ensure-managed-window.sh && yabai -m window --toggle split
+alt + ctrl - m : ~/.config/yabai/ensure-managed-window.sh && yabai -m window --ratio abs:0.45
 alt + ctrl - r : yabai -m space --rotate 90
 alt + ctrl - x : yabai -m space --mirror x-axis
 alt + ctrl - y : yabai -m space --mirror y-axis
