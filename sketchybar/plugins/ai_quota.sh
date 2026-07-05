@@ -2,12 +2,12 @@
 
 # AI quota - provider-specific quota labels from opencode-quota cache
 
-GREEN=0xffb7cc85
-YELLOW=0xffffe066
-RED=0xffcb7c94
-DIM=0xff565f89
-WHITE=0xfff3f6f9
-ORANGE=0xffffa94d
+GREEN=0xff4dff88
+YELLOW=0xffffd23d
+RED=0xffff3d81
+DIM=0xff4a5578
+WHITE=0xffdbe9ff
+ORANGE=0xffff9f1c
 COPILOT_BLUE=0xff347aff
 
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin:$HOME/.local/state/nix/profiles/home-manager/home-path/bin:$HOME/.nix-profile/bin"
@@ -78,6 +78,24 @@ mode_source_item() {
   esac
 }
 
+# Container box whose glow border color the detail box should mirror
+mode_box_item() {
+  case "$MODE" in
+    openai)
+      printf -- "openai_box"
+      ;;
+    anthropic|claude)
+      printf -- "claude_box"
+      ;;
+    copilot)
+      printf -- "copilot_quota"
+      ;;
+    *)
+      printf -- ""
+      ;;
+  esac
+}
+
 set_detail_with_source_style() {
   local message="$1"
   local source_item
@@ -85,15 +103,24 @@ set_detail_with_source_style() {
   local icon_color
   local icon_font
 
+  local box_item
+  local border_color
+
   source_item="$(mode_source_item)"
+  box_item="$(mode_box_item)"
   icon_value=""
   icon_color="$WHITE"
   icon_font="IosevkaTerm NF:Bold:14.0"
+  border_color=""
 
   if [ -n "$source_item" ]; then
     icon_value="$(sketchybar --query "$source_item" 2>/dev/null | "$JQ_BIN" -r '.icon.value // empty' 2>/dev/null)"
     icon_color="$(sketchybar --query "$source_item" 2>/dev/null | "$JQ_BIN" -r '.icon.color // empty' 2>/dev/null)"
     icon_font="$(sketchybar --query "$source_item" 2>/dev/null | "$JQ_BIN" -r '.icon.font // empty' 2>/dev/null)"
+  fi
+
+  if [ -n "$box_item" ]; then
+    border_color="$(sketchybar --query "$box_item" 2>/dev/null | "$JQ_BIN" -r '.geometry.background.border_color // empty' 2>/dev/null)"
   fi
 
   if [ -z "$icon_color" ]; then
@@ -102,8 +129,11 @@ set_detail_with_source_style() {
   if [ -z "$icon_font" ]; then
     icon_font="IosevkaTerm NF:Bold:14.0"
   fi
+  if [ -z "$border_color" ]; then
+    border_color="$icon_color"
+  fi
 
-  sketchybar --set ai_detail drawing=on icon.drawing=on icon="$icon_value" icon.color="$icon_color" icon.font="$icon_font" label="$message" label.color="$WHITE" >/dev/null 2>&1 || true
+  sketchybar --set ai_detail drawing=on icon.drawing=on icon="$icon_value" icon.color="$icon_color" icon.font="$icon_font" label="$message" label.color="$WHITE" background.border_color="$border_color" >/dev/null 2>&1 || true
 }
 
 write_detail_cache() {
