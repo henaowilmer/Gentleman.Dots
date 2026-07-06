@@ -377,7 +377,7 @@ sketchybar --add item claude_quota_weekly right \
   background.drawing=off \
   update_freq=60 \
   script="$PLUGIN_DIR/ai_quota.sh claude weekly" \
-  click_script="$PLUGIN_DIR/ai_quota.sh claude click"
+  click_script="$PLUGIN_DIR/ai_quota.sh claude weekly click"
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # OPENAI QUOTA
@@ -424,7 +424,7 @@ sketchybar --add item openai_quota_weekly right \
   background.drawing=off \
   update_freq=60 \
   script="$PLUGIN_DIR/ai_quota.sh openai weekly" \
-  click_script="$PLUGIN_DIR/ai_quota.sh openai click"
+  click_script="$PLUGIN_DIR/ai_quota.sh openai weekly click"
 
 # Symmetric visual gap between provider boxes
 sketchybar --add item ai_provider_gap right \
