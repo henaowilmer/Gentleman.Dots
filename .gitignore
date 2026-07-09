@@ -31,3 +31,4 @@ Thumbs.db
 # Local Pi runtime state
 .atl/
 .pi/
+.codegraph/
