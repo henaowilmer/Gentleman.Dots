@@ -74,4 +74,11 @@ yabai -m rule --add app="^1Password" manage=off
 yabai -m signal --add app='^Ghostty$' event=window_created action='yabai -m space --layout bsp'
 yabai -m signal --add app='^Ghostty$' event=window_destroyed action='yabai -m space --layout bsp'
 
+# When the external monitor connects, keep only "social" (space 1) on the
+# MacBook screen and relocate every other existing space onto the external
+# display, instead of leaving macOS' auto-created empty space there.
+# Disconnecting needs no handling: macOS merges the display's spaces back
+# onto the laptop screen on its own, preserving them for the next reconnect.
+yabai -m signal --add event=display_added action="$HOME/.config/yabai/move-spaces-to-external.sh \$YABAI_DISPLAY_INDEX"
+
 echo "yabai configuration loaded.."
