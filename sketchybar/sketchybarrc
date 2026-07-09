@@ -33,6 +33,7 @@ export GLOW_BLUE=0x99347aff
 export GLOW_ICE=0x995ce1ff
 export GLOW_VIOLET=0x997c5cff
 export GLOW_AMBER=0x99ff9f1c
+export GLOW_GREEN=0x994dff88
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # BAR APPEARANCE (transparent base for floating holo-panels)
@@ -144,48 +145,244 @@ sketchybar --add item front_app left \
   --subscribe front_app front_app_switched
 
 # ─────────────────────────────────────────────────────────────────────────────────
-# AI VISIBILITY TOGGLE (robot chip next to app name - hides/shows Copilot + OpenAI)
+# AI QUOTA PANELS (left side, next to app names - all providers grouped here)
+# Visual order (left to right): Copilot | Claude | OpenAI | OpenCode Go
 # ─────────────────────────────────────────────────────────────────────────────────
-sketchybar --add item ai_toggle left \
-  --set ai_toggle \
-  icon="󰚩" \
-  icon.font="IosevkaTerm NF:Bold:13.0" \
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# OPENCODE GO QUOTA (5h + weekly, monthly shown in detail on click)
+# ─────────────────────────────────────────────────────────────────────────────────
+sketchybar --add item opencode_quota left \
+  --set opencode_quota \
+  icon="⧈" \
+  icon.font="IosevkaTerm NF:Bold:35.0" \
+  icon.color=$WHITE \
+  icon.padding_left=2 \
+  icon.padding_right=1 \
+  label.padding_left=1 \
+  label.padding_right=2 \
+  label.width=30 \
+  label.align=right \
+  scroll_texts=off \
+  background.drawing=off \
+  update_freq=60 \
+  script="$PLUGIN_DIR/ai_quota.sh opencode-go" \
+  click_script="$PLUGIN_DIR/ai_quota.sh opencode-go click"
+
+sketchybar --add item opencode_quota_separator left \
+  --set opencode_quota_separator \
+  icon.drawing=off \
+  label="|" \
+  label.color=$DIM \
+  padding_left=-6 \
+  padding_right=-6 \
+  label.padding_left=0 \
+  label.padding_right=1 \
+  label.width=10 \
+  label.align=center \
+  background.drawing=off
+
+sketchybar --add item opencode_quota_weekly left \
+  --set opencode_quota_weekly \
+  icon.drawing=off \
+  label="--" \
+  label.color=$WHITE \
+  label.padding_left=2 \
+  label.padding_right=2 \
+  label.width=28 \
+  label.align=right \
+  background.drawing=off \
+  update_freq=60 \
+  script="$PLUGIN_DIR/ai_quota.sh opencode-go weekly" \
+  click_script="$PLUGIN_DIR/ai_quota.sh opencode-go weekly click"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# COPILOT QUOTA
+# ─────────────────────────────────────────────────────────────────────────────────
+sketchybar --add item copilot_quota left \
+  --set copilot_quota \
+  icon="" \
+  icon.font="IosevkaTerm NF:Bold:14.0" \
   icon.color=$PRIMARY \
   icon.padding_left=6 \
-  icon.padding_right=6 \
-  label.drawing=off \
-  padding_left=4 \
-  padding_right=2 \
+  icon.padding_right=2 \
+  label.padding_right=6 \
+  label.width=40 \
+  label.align=right \
+  scroll_texts=off \
   background.color=$ISLAND_BG \
   background.border_color=$GLOW_BLUE \
   background.border_width=1 \
   background.corner_radius=0 \
   background.height=24 \
-  click_script="$PLUGIN_DIR/ai_toggle.sh toggle"
+  update_freq=60 \
+  script="$PLUGIN_DIR/ai_quota.sh copilot" \
+  click_script="$PLUGIN_DIR/ai_quota.sh copilot click"
 
-# Detail box for AI quota click refresh (next to focused app)
-sketchybar --add item ai_detail left \
-  --set ai_detail \
-  icon.drawing=on \
-  icon.padding_left=8 \
-  icon.padding_right=4 \
-  icon.color=$WHITE \
-  icon.font="IosevkaTerm NF:Bold:14.0" \
-  drawing=off \
-  label.font="IosevkaTerm NFM:Medium:13.0" \
+# ─────────────────────────────────────────────────────────────────────────────────
+# CLAUDE QUOTA
+# ─────────────────────────────────────────────────────────────────────────────────
+sketchybar --add item claude_quota left \
+  --set claude_quota \
+  icon="✴" \
+  icon.font="IosevkaTerm NF:Bold:35.0" \
+  icon.color=$ORANGE \
+  icon.padding_left=2 \
+  icon.padding_right=1 \
+  label.padding_left=1 \
+  label.padding_right=2 \
+  label.width=30 \
+  label.align=right \
+  scroll_texts=off \
+  background.drawing=off \
+  update_freq=60 \
+  script="$PLUGIN_DIR/ai_quota.sh claude" \
+  click_script="$PLUGIN_DIR/ai_quota.sh claude click"
+
+sketchybar --add item claude_quota_separator left \
+  --set claude_quota_separator \
+  icon.drawing=off \
+  label="|" \
+  label.color=$DIM \
+  padding_left=-6 \
+  padding_right=-6 \
+  label.padding_left=0 \
+  label.padding_right=1 \
+  label.width=10 \
+  label.align=center \
+  background.drawing=off
+
+sketchybar --add item claude_quota_weekly left \
+  --set claude_quota_weekly \
+  icon.drawing=off \
+  label="--" \
   label.color=$WHITE \
-  label.padding_left=8 \
-  label.padding_right=8 \
+  label.padding_left=2 \
+  label.padding_right=2 \
+  label.width=28 \
+  label.align=right \
+  background.drawing=off \
+  update_freq=60 \
+  script="$PLUGIN_DIR/ai_quota.sh claude weekly" \
+  click_script="$PLUGIN_DIR/ai_quota.sh claude weekly click"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# OPENAI QUOTA
+# ─────────────────────────────────────────────────────────────────────────────────
+sketchybar --add item openai_quota left \
+  --set openai_quota \
+  icon="֎" \
+  icon.font="IosevkaTerm NF:Bold:35.0" \
+  icon.color=$WHITE \
+  icon.padding_left=2 \
+  icon.padding_right=1 \
+  label.padding_left=1 \
+  label.padding_right=2 \
+  label.width=30 \
+  label.align=right \
+  scroll_texts=off \
+  background.drawing=off \
+  update_freq=60 \
+  script="$PLUGIN_DIR/ai_quota.sh openai" \
+  click_script="$PLUGIN_DIR/ai_quota.sh openai click"
+
+sketchybar --add item openai_quota_separator left \
+  --set openai_quota_separator \
+  icon.drawing=off \
+  label="|" \
+  label.color=$DIM \
+  padding_left=-6 \
+  padding_right=-6 \
+  label.padding_left=0 \
+  label.padding_right=1 \
+  label.width=10 \
+  label.align=center \
+  background.drawing=off
+
+sketchybar --add item openai_quota_weekly left \
+  --set openai_quota_weekly \
+  icon.drawing=off \
+  label="--" \
+  label.color=$WHITE \
+  label.padding_left=2 \
+  label.padding_right=2 \
+  label.width=28 \
+  label.align=right \
+  background.drawing=off \
+  update_freq=60 \
+  script="$PLUGIN_DIR/ai_quota.sh openai weekly" \
+  click_script="$PLUGIN_DIR/ai_quota.sh openai weekly click"
+
+# Spacer between provider boxes
+sketchybar --add item ai_provider_gap left \
+  --set ai_provider_gap \
+  icon.drawing=off \
+  label.drawing=off \
+  background.drawing=off \
+  width=6
+
+# Spacer between OpenAI and OpenCode Go boxes
+sketchybar --add item ai_provider_gap2 left \
+  --set ai_provider_gap2 \
+  icon.drawing=off \
+  label.drawing=off \
+  background.drawing=off \
+  width=6
+
+# Spacer shown only while AI quota panels are hidden
+sketchybar --add item ai_hidden_gap left \
+  --set ai_hidden_gap \
+  drawing=off \
+  icon.drawing=off \
+  label.drawing=off \
+  background.drawing=off \
+  width=6
+
+# Shared container per provider (5h + weekly in same box)
+sketchybar --add bracket opencode_box opencode_quota opencode_quota_separator opencode_quota_weekly \
+  --set opencode_box \
   background.color=$ISLAND_BG \
-  background.border_color=$GLOW_BLUE \
+  background.border_color=$GLOW_GREEN \
   background.border_width=1 \
   background.corner_radius=0 \
   background.height=24
 
+sketchybar --add bracket claude_box claude_quota claude_quota_separator claude_quota_weekly \
+  --set claude_box \
+  background.color=$ISLAND_BG \
+  background.border_color=$GLOW_AMBER \
+  background.border_width=1 \
+  background.corner_radius=0 \
+  background.height=24
+
+sketchybar --add bracket openai_box openai_quota openai_quota_separator openai_quota_weekly \
+  --set openai_box \
+  background.color=$ISLAND_BG \
+  background.border_color=$GLOW_VIOLET \
+  background.border_width=1 \
+  background.corner_radius=0 \
+  background.height=24
+
+# Ensure provider order inside each box: icon+5h | separator | weekly
+sketchybar --move claude_quota_separator after claude_quota
+sketchybar --move claude_quota_weekly after claude_quota_separator
+sketchybar --move openai_quota_separator after openai_quota
+sketchybar --move openai_quota_weekly after openai_quota_separator
+sketchybar --move opencode_quota_separator after opencode_quota
+sketchybar --move opencode_quota_weekly after opencode_quota_separator
+# Box order (left to right): Copilot | Claude | gap | OpenAI | gap | OpenCode Go
+# Move OpenCode Go block to the end (it was added first so it starts leftmost)
+sketchybar --move opencode_quota after openai_quota_weekly
+sketchybar --move opencode_quota_separator after opencode_quota
+sketchybar --move opencode_quota_weekly after opencode_quota_separator
+# Place gaps between boxes
+sketchybar --move ai_provider_gap before openai_quota
+sketchybar --move ai_provider_gap2 before opencode_quota
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #                                RIGHT SIDE
 # ═══════════════════════════════════════════════════════════════════════════════
-# Visual order (right to left): DateTime | Battery | RAM | CPU | GPU | Copilot | Claude | OpenAI | camera gap
+# Visual order (right to left): DateTime | Battery | RAM | CPU | GPU | gap | AI toggle | AI detail | camera gap
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # DATETIME (rightmost - blue glow panel)
@@ -299,164 +496,52 @@ sketchybar --add bracket metrics_box ram cpu gpu \
   background.padding_left=2 \
   background.padding_right=2
 
-# Spacer between metrics and Claude box, shown only while Copilot/OpenAI are hidden
-sketchybar --add item ai_hidden_gap right \
-  --set ai_hidden_gap \
-  drawing=off \
+# Standard 6px gap between metrics_box and AI toggle
+sketchybar --add item ai_toggle_gap right \
+  --set ai_toggle_gap \
   icon.drawing=off \
   label.drawing=off \
   background.drawing=off \
   width=6
 
 # ─────────────────────────────────────────────────────────────────────────────────
+# AI VISIBILITY TOGGLE (hides/shows OpenAI + OpenCode Go quota panels on left)
 # ─────────────────────────────────────────────────────────────────────────────────
-# COPILOT QUOTA
-# ─────────────────────────────────────────────────────────────────────────────────
-sketchybar --add item copilot_quota right \
-  --set copilot_quota \
-  icon="" \
-  icon.font="IosevkaTerm NF:Bold:14.0" \
+sketchybar --add item ai_toggle right \
+  --set ai_toggle \
+  icon="󰚩" \
+  icon.font="IosevkaTerm NF:Bold:13.0" \
   icon.color=$PRIMARY \
   icon.padding_left=6 \
-  icon.padding_right=2 \
-  label.padding_right=6 \
-  label.width=40 \
-  label.align=right \
-  scroll_texts=off \
+  icon.padding_right=6 \
+  label.drawing=off \
+  padding_left=4 \
+  padding_right=2 \
   background.color=$ISLAND_BG \
   background.border_color=$GLOW_BLUE \
   background.border_width=1 \
   background.corner_radius=0 \
   background.height=24 \
-  update_freq=60 \
-  script="$PLUGIN_DIR/ai_quota.sh copilot" \
-  click_script="$PLUGIN_DIR/ai_quota.sh copilot click"
+  click_script="$PLUGIN_DIR/ai_toggle.sh toggle"
 
-# ─────────────────────────────────────────────────────────────────────────────────
-# CLAUDE QUOTA
-# ─────────────────────────────────────────────────────────────────────────────────
-sketchybar --add item claude_quota right \
-  --set claude_quota \
-  icon="✴" \
-  icon.font="IosevkaTerm NF:Bold:35.0" \
-  icon.color=$ORANGE \
-  icon.padding_left=2 \
-  icon.padding_right=1 \
-  label.padding_left=1 \
-  label.padding_right=2 \
-  label.width=30 \
-  label.align=right \
-  scroll_texts=off \
-  background.drawing=off \
-  update_freq=60 \
-  script="$PLUGIN_DIR/ai_quota.sh claude" \
-  click_script="$PLUGIN_DIR/ai_quota.sh claude click"
-
-sketchybar --add item claude_quota_separator right \
-  --set claude_quota_separator \
-  icon.drawing=off \
-  label="|" \
-  label.color=$DIM \
-  padding_left=-6 \
-  padding_right=-6 \
-  label.padding_left=0 \
-  label.padding_right=1 \
-  label.width=10 \
-  label.align=center \
-  background.drawing=off
-
-sketchybar --add item claude_quota_weekly right \
-  --set claude_quota_weekly \
-  icon.drawing=off \
-  label="--" \
-  label.color=$WHITE \
-  label.padding_left=2 \
-  label.padding_right=2 \
-  label.width=28 \
-  label.align=right \
-  background.drawing=off \
-  update_freq=60 \
-  script="$PLUGIN_DIR/ai_quota.sh claude weekly" \
-  click_script="$PLUGIN_DIR/ai_quota.sh claude weekly click"
-
-# ─────────────────────────────────────────────────────────────────────────────────
-# OPENAI QUOTA
-# ─────────────────────────────────────────────────────────────────────────────────
-sketchybar --add item openai_quota right \
-  --set openai_quota \
-  icon="֎" \
-  icon.font="IosevkaTerm NF:Bold:35.0" \
+# Detail box for AI quota click refresh (right side, next to toggle)
+sketchybar --add item ai_detail right \
+  --set ai_detail \
+  icon.drawing=on \
+  icon.padding_left=8 \
+  icon.padding_right=4 \
   icon.color=$WHITE \
-  icon.padding_left=2 \
-  icon.padding_right=1 \
-  label.padding_left=1 \
-  label.padding_right=2 \
-  label.width=30 \
-  label.align=right \
-  scroll_texts=off \
-  background.drawing=off \
-  update_freq=60 \
-  script="$PLUGIN_DIR/ai_quota.sh openai" \
-  click_script="$PLUGIN_DIR/ai_quota.sh openai click"
-
-sketchybar --add item openai_quota_separator right \
-  --set openai_quota_separator \
-  icon.drawing=off \
-  label="|" \
-  label.color=$DIM \
-  padding_left=-6 \
-  padding_right=-6 \
-  label.padding_left=0 \
-  label.padding_right=1 \
-  label.width=10 \
-  label.align=center \
-  background.drawing=off
-
-sketchybar --add item openai_quota_weekly right \
-  --set openai_quota_weekly \
-  icon.drawing=off \
-  label="--" \
+  icon.font="IosevkaTerm NF:Bold:14.0" \
+  drawing=off \
+  label.font="IosevkaTerm NFM:Medium:13.0" \
   label.color=$WHITE \
-  label.padding_left=2 \
-  label.padding_right=2 \
-  label.width=28 \
-  label.align=right \
-  background.drawing=off \
-  update_freq=60 \
-  script="$PLUGIN_DIR/ai_quota.sh openai weekly" \
-  click_script="$PLUGIN_DIR/ai_quota.sh openai weekly click"
-
-# Symmetric visual gap between provider boxes
-sketchybar --add item ai_provider_gap right \
-  --set ai_provider_gap \
-  icon.drawing=off \
-  label.drawing=off \
-  background.drawing=off \
-  width=6
-
-# Shared container per provider (5h + weekly in same box)
-sketchybar --add bracket claude_box claude_quota claude_quota_separator claude_quota_weekly \
-  --set claude_box \
+  label.padding_left=8 \
+  label.padding_right=8 \
   background.color=$ISLAND_BG \
-  background.border_color=$GLOW_AMBER \
+  background.border_color=$GLOW_BLUE \
   background.border_width=1 \
   background.corner_radius=0 \
   background.height=24
-
-sketchybar --add bracket openai_box openai_quota openai_quota_separator openai_quota_weekly \
-  --set openai_box \
-  background.color=$ISLAND_BG \
-  background.border_color=$GLOW_VIOLET \
-  background.border_width=1 \
-  background.corner_radius=0 \
-  background.height=24
-
-# Ensure provider order inside each box: icon+5h | weekly
-sketchybar --move claude_quota after claude_quota_weekly
-sketchybar --move claude_quota_separator after claude_quota_weekly
-sketchybar --move openai_quota after openai_quota_weekly
-sketchybar --move openai_quota_separator after openai_quota_weekly
-sketchybar --move ai_provider_gap before openai_quota_weekly
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # CAMERA GAP (MacBook notch spacing)

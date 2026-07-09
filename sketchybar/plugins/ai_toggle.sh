@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Toggle visibility of Copilot + OpenAI quota panels
+# Toggle visibility of OpenAI + OpenCode Go quota panels (Claude and Copilot stay visible)
 # State persists across sketchybar reloads via cache file
-# ai_hidden_gap spacer keeps Claude/metrics separation correct while hidden
+# ai_hidden_gap spacer keeps separation correct while hidden
 
 NEON_BLUE=0xff347aff
 DIM=0xff4a5578
@@ -13,7 +13,7 @@ STATE_FILE="$STATE_DIR/ai_quota_hidden"
 ICON_VISIBLE="󰚩"
 ICON_HIDDEN="󱚧"
 
-ITEMS=(copilot_quota openai_quota openai_quota_separator openai_quota_weekly openai_box ai_provider_gap)
+ITEMS=(opencode_quota opencode_quota_separator opencode_quota_weekly opencode_box openai_quota openai_quota_separator openai_quota_weekly openai_box ai_provider_gap ai_provider_gap2)
 
 apply_state() {
   local args=()
