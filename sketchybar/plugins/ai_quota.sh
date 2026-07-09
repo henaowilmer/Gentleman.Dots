@@ -9,8 +9,17 @@ DIM=0xff4a5578
 WHITE=0xffdbe9ff
 ORANGE=0xffff9f1c
 COPILOT_BLUE=0xff347aff
+OC_GO_GREEN=0xff4dff88
+OC_GO_ICON=0xffdbe9ff
 
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin:$HOME/.local/state/nix/profiles/home-manager/home-path/bin:$HOME/.nix-profile/bin"
+
+is_pct_mode() {
+  case "$1" in
+    openai|claude|anthropic|opencode-go|opencodego|opencode_go) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 MODE="${1:-openai}"
 ACTION="auto"
@@ -72,6 +81,9 @@ mode_source_item() {
     copilot)
       printf -- "copilot_quota"
       ;;
+    opencode-go|opencodego|opencode_go)
+      printf -- "opencode_quota"
+      ;;
     *)
       printf -- ""
       ;;
@@ -89,6 +101,9 @@ mode_box_item() {
       ;;
     copilot)
       printf -- "copilot_quota"
+      ;;
+    opencode-go|opencodego|opencode_go)
+      printf -- "opencode_box"
       ;;
     *)
       printf -- ""
@@ -166,6 +181,9 @@ mode_icon_color() {
     copilot)
       printf -- "%s" "$COPILOT_BLUE"
       ;;
+    opencode-go|opencodego|opencode_go)
+      printf -- "%s" "$OC_GO_ICON"
+      ;;
     *)
       printf -- ""
       ;;
@@ -231,18 +249,18 @@ set_fallback() {
   if [ -n "$cached" ]; then
     cached_color="${cached%%|*}"
     cached_label="${cached#*|}"
-    if [ "$MODE" = "openai" ] || [ "$MODE" = "claude" ] || [ "$MODE" = "anthropic" ]; then
+    if is_pct_mode "$MODE"; then
       case "$cached_label" in
         *" | "*) cached_label="" ;;
       esac
     fi
-    if [ "$WINDOW" = "weekly" ] && { [ "$MODE" = "openai" ] || [ "$MODE" = "claude" ] || [ "$MODE" = "anthropic" ]; }; then
+    if [ "$WINDOW" = "weekly" ] && { is_pct_mode "$MODE"; }; then
       cached_label="${cached_label#| }"
       cached_label="${cached_label#|}"
     fi
     if [ -n "$cached_color" ] && [ -n "$cached_label" ] && [ "$cached_label" != "$cached" ]; then
       fallback_label_color="${current_label_color:-$WHITE}"
-      if [ "$MODE" = "openai" ] || [ "$MODE" = "claude" ] || [ "$MODE" = "anthropic" ]; then
+      if is_pct_mode "$MODE"; then
         pct_value="${cached_label%%%}"
         case "$pct_value" in
           ''|*[!0-9]*) ;;
@@ -255,7 +273,7 @@ set_fallback() {
   fi
 
   if [ -n "$NAME" ]; then
-    if [ "$MODE" = "openai" ] || [ "$MODE" = "claude" ] || [ "$MODE" = "anthropic" ]; then
+    if is_pct_mode "$MODE"; then
       case "$current_label" in
         *" | "*) current_label="" ;;
       esac
@@ -268,7 +286,7 @@ set_fallback() {
     fi
     if [ -n "$current_label" ] && [ "$current_label" != "--" ]; then
       fallback_label_color="${current_label_color:-$WHITE}"
-      if [ "$MODE" = "openai" ] || [ "$MODE" = "claude" ] || [ "$MODE" = "anthropic" ]; then
+      if is_pct_mode "$MODE"; then
         pct_value="${current_label%%%}"
         case "$pct_value" in
           ''|*[!0-9]*) ;;
@@ -297,6 +315,9 @@ set_fallback() {
       ;;
     copilot)
       sketchybar --set "$NAME" icon.color="$COPILOT_BLUE" label="--" label.color="$DIM"
+      ;;
+    opencode-go|opencodego|opencode_go)
+      sketchybar --set "$NAME" icon.color="$OC_GO_ICON" label="--" label.color="$DIM"
       ;;
     *)
       sketchybar --set "$NAME" icon.color="$DIM" label="--" label.color="$DIM"
@@ -462,7 +483,24 @@ case "$MODE" in
   copilot)
     PROVIDER_ID="copilot"
     ;;
+  opencode-go|opencodego|opencode_go)
+    PROVIDER_ID="opencode-go"
+    ;;
 esac
+
+# `show --json` only reads the on-disk cache; it never fetches live data.
+# Only the plain `show` command actually hits the provider APIs and refreshes
+# the cache, so we trigger it ourselves before reading the JSON. On a click we
+# block so the user sees fresh data immediately; on the periodic tick we
+# refresh in the background so sketchybar isn't held up (the tool's own
+# minIntervalMs TTL prevents excessive API calls).
+if [ -n "$PROVIDER_ID" ]; then
+  if [ "$REFRESHING" -eq 1 ]; then
+    "$QUOTA_BIN" show --provider "$PROVIDER_ID" >/dev/null 2>&1
+  else
+    "$QUOTA_BIN" show --provider "$PROVIDER_ID" >/dev/null 2>&1 &
+  fi
+fi
 
 if [ -n "$PROVIDER_ID" ]; then
   JSON="$($QUOTA_BIN show --json --provider "$PROVIDER_ID" 2>/dev/null)"
@@ -474,6 +512,11 @@ if [ -z "$JSON" ]; then
   set_fallback
   exit 0
 fi
+
+CACHE_AGE_SECONDS="$(printf '%s' "$JSON" | "$JQ_BIN" -r '.cacheAgeSeconds // 0' 2>/dev/null)"
+case "$CACHE_AGE_SECONDS" in
+  ''|*[!0-9]*) CACHE_AGE_SECONDS=0 ;;
+esac
 
 case "$MODE" in
   openai)
@@ -539,7 +582,7 @@ case "$MODE" in
     CLAUDE_WEEKLY="$(fmt_pct "$CLAUDE_WEEKLY_RAW")"
     CLAUDE_WEEKLY_RESET="$(fmt_reset_remaining "$CLAUDE_WEEKLY_RESET_RAW")"
 
-    if [ "$CLAUDE_5H" = "--" ]; then
+    if [ "$CLAUDE_5H" = "--" ] || [ "$REFRESHING" -eq 1 ] || [ "$CACHE_AGE_SECONDS" -gt 300 ]; then
       CLAUDE_OAUTH_JSON="$(get_claude_oauth_json || true)"
       if [ -n "$CLAUDE_OAUTH_JSON" ]; then
         CLAUDE_OAUTH_5H_USED="$(printf '%s' "$CLAUDE_OAUTH_JSON" | "$JQ_BIN" -r '
@@ -672,6 +715,65 @@ case "$MODE" in
     set_item "$COPILOT_BLUE" "${COPILOT_PCT}%" "$COLOR"
     write_detail_cache "${COPILOT_PCT}% (${COPILOT_RESET})"
     show_detail_box "${COPILOT_PCT}% (${COPILOT_RESET})"
+    ;;
+
+  opencode-go|opencodego|opencode_go)
+    OC_5H_RAW="$(printf '%s' "$JSON" | "$JQ_BIN" -r '((.providers["opencode-go"].entries // []) | map(select((.window // "") == "5h" and .percentRemaining != null)) | .[0].percentRemaining) // empty')"
+    OC_5H_RESET_RAW="$(printf '%s' "$JSON" | "$JQ_BIN" -r '((.providers["opencode-go"].entries // []) | map(select((.window // "") == "5h" and .resetAt != null)) | .[0].resetAt) // empty')"
+    OC_WEEKLY_RAW="$(printf '%s' "$JSON" | "$JQ_BIN" -r '((.providers["opencode-go"].entries // []) | map(select(((.window // "") | ascii_downcase | test("week")) and .percentRemaining != null)) | .[0].percentRemaining) // empty')"
+    OC_WEEKLY_RESET_RAW="$(printf '%s' "$JSON" | "$JQ_BIN" -r '((.providers["opencode-go"].entries // []) | map(select(((.window // "") | ascii_downcase | test("week")) and .resetAt != null)) | .[0].resetAt) // empty')"
+    OC_MONTHLY_RAW="$(printf '%s' "$JSON" | "$JQ_BIN" -r '((.providers["opencode-go"].entries // []) | map(select(((.window // "") | ascii_downcase | test("month")) and .percentRemaining != null)) | .[0].percentRemaining) // empty')"
+    OC_MONTHLY_RESET_RAW="$(printf '%s' "$JSON" | "$JQ_BIN" -r '((.providers["opencode-go"].entries // []) | map(select(((.window // "") | ascii_downcase | test("month")) and .resetAt != null)) | .[0].resetAt) // empty')"
+
+    OC_5H="$(fmt_pct "$OC_5H_RAW")"
+    OC_5H_RESET="$(fmt_reset_remaining "$OC_5H_RESET_RAW")"
+    OC_WEEKLY="$(fmt_pct "$OC_WEEKLY_RAW")"
+    OC_WEEKLY_RESET="$(fmt_reset_remaining "$OC_WEEKLY_RESET_RAW")"
+    OC_MONTHLY="$(fmt_pct "$OC_MONTHLY_RAW")"
+    OC_MONTHLY_RESET="$(fmt_reset_remaining "$OC_MONTHLY_RESET_RAW")"
+
+    if [ "$OC_5H" = "--" ] && [ "$OC_WEEKLY" = "--" ]; then
+      sketchybar --set opencode_quota_weekly label="--" label.color="$DIM" >/dev/null 2>&1 || true
+      if ! show_cached_detail_box; then
+        show_unavailable_detail "unavailable (provider not detected)"
+      fi
+      set_fallback
+      exit 0
+    fi
+
+    if [ "$WINDOW" = "weekly" ]; then
+      OC_MAIN_VALUE="$OC_WEEKLY"
+      OC_MAIN_RESET="$OC_WEEKLY_RESET"
+    else
+      OC_MAIN_VALUE="$OC_5H"
+      OC_MAIN_RESET="$OC_5H_RESET"
+      if [ "$OC_MAIN_VALUE" = "--" ]; then
+        OC_MAIN_VALUE="$OC_WEEKLY"
+        OC_MAIN_RESET="$OC_WEEKLY_RESET"
+      fi
+    fi
+
+    COLOR="$(pick_color_by_pct "$OC_MAIN_VALUE")"
+
+    if [ "$OC_MAIN_VALUE" = "--" ]; then
+      OC_MAIN_LABEL="--"
+    else
+      OC_MAIN_LABEL="${OC_MAIN_VALUE}%"
+    fi
+
+    set_item "$OC_GO_ICON" "$OC_MAIN_LABEL" "$COLOR"
+
+    OC_WEEKLY_LABEL="--"
+    OC_WEEKLY_COLOR="$DIM"
+    if [ "$OC_WEEKLY" != "--" ]; then
+      OC_WEEKLY_LABEL="${OC_WEEKLY}%"
+      OC_WEEKLY_COLOR="$(pick_color_by_pct "$OC_WEEKLY")"
+    fi
+
+    sketchybar --set opencode_quota_weekly label="$OC_WEEKLY_LABEL" label.color="$OC_WEEKLY_COLOR" >/dev/null 2>&1 || true
+
+    write_detail_cache "${OC_5H}% (${OC_5H_RESET}) | ${OC_WEEKLY}% (${OC_WEEKLY_RESET}) | ${OC_MONTHLY}% (${OC_MONTHLY_RESET})"
+    show_detail_box "${OC_5H}% (${OC_5H_RESET}) | ${OC_WEEKLY}% (${OC_WEEKLY_RESET}) | ${OC_MONTHLY}% (${OC_MONTHLY_RESET})"
     ;;
 
   *)
