@@ -27,6 +27,11 @@
             inherit system;
             config.allowUnfree = true;
           };
+          nodeWithoutNpm = pkgs.runCommand "nodejs-without-npm-${pkgs.nodejs.version}" { } ''
+            mkdir -p "$out/bin"
+            ln -s ${pkgs.nodejs}/bin/node "$out/bin/node"
+            ln -s ${pkgs.nodejs}/bin/corepack "$out/bin/corepack"
+          '';
           
           unstablePkgs = import nixpkgs-unstable {
             inherit system;
@@ -44,11 +49,14 @@
           modules = [
             ./nushell.nix  # Nushell configuration
             ./ghostty.nix  # Ghostty configuration
+            ./alacritty.nix  # Alacritty configuration
             ./zed.nix  # Zed configuration
             ./television.nix  # Television configuration
             ./wezterm.nix  # WezTerm configuration
-            # ./zellij.nix  # Zellij configuration (commented out)
+            ./kitty.nix  # Kitty configuration
+            ./zellij.nix  # Zellij configuration
             ./tmux.nix  # Tmux configuration
+            ./tmux-agents.nix  # Tmux agent-state notifier (working/blocked/idle)
             ./fish.nix  # Fish shell configuration
             ./starship.nix  # Starship prompt configuration
             ./nvim.nix  # Neovim configuration
@@ -57,8 +65,12 @@
             ./opencode.nix  # OpenCode AI assistant configuration
             ./claude.nix  # Claude Code CLI configuration
             ./engram.nix  # Engram memory layer for AI agents
+            ./herdr.nix  # Herdr agent multiplexer configuration
             ./yabai.nix  # Yabai window manager configuration
             ./skhd.nix  # Skhd hotkey daemon configuration
+            # Nehir (Niri-style WM) trial reverted — back to yabai/skhd/sketchybar.
+            # nehir.nix and nehir/ config are kept in the repo for a future retry.
+            # ./nehir.nix  # Nehir (Niri-style WM) configuration
             # ./simple-bar.nix  # simple-bar for Übersicht (disabled - using sketchybar)
             ./sketchybar.nix  # SketchyBar status bar
             ./raycast.nix  # Raycast scripts
@@ -71,19 +83,16 @@
               # Base packages that should be available everywhere
               home.packages = with pkgs; [
                 # ─── Terminals and utilities ───
-                # zellij
+                zellij
                 tmux
                 fish
                 zsh
                 nushell
 
                 # ─── Window management (macOS) ───
-                yabai
-                skhd
-                unstablePkgs.sketchybar  # Use unstable for latest version
+                # yabai, skhd, and sketchybar are installed via Homebrew modules.
 
                 # ─── Development tools ───
-                volta
                 carapace
                 zoxide
                 atuin
@@ -91,7 +100,8 @@
                 bash
                 starship
                 fzf
-                nodejs
+                nodeWithoutNpm
+                unstablePkgs.pnpm
                 bun
                 cargo
                 go

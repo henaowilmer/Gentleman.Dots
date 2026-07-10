@@ -7,37 +7,37 @@ sudo yabai --load-sa
 yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
 
 # global settings - visual enhancements
-yabai -m config mouse_follows_focus          on
-yabai -m config focus_follows_mouse          off
-yabai -m config window_origin_display        default
-yabai -m config window_placement             second_child
-yabai -m config window_shadow                on
-yabai -m config window_opacity               on
-yabai -m config window_opacity_duration      0.2
-yabai -m config active_window_opacity        1.0
-yabai -m config normal_window_opacity        0.95
-yabai -m config window_animation_duration    0.0
-yabai -m config window_animation_easing      ease_out_circ
-yabai -m config insert_feedback_color        0xff61afef
-yabai -m config split_ratio                  0.50
-yabai -m config auto_balance                 off
-yabai -m config mouse_modifier               fn
-yabai -m config mouse_action1                move
-yabai -m config mouse_action2                resize
-yabai -m config mouse_drop_action            swap
+yabai -m config mouse_follows_focus on
+yabai -m config focus_follows_mouse off
+yabai -m config window_origin_display default
+yabai -m config window_placement second_child
+yabai -m config window_shadow on
+yabai -m config window_opacity on
+yabai -m config window_opacity_duration 0.2
+yabai -m config active_window_opacity 1.0
+yabai -m config normal_window_opacity 0.95
+yabai -m config window_animation_duration 0.0
+yabai -m config window_animation_easing ease_out_circ
+yabai -m config insert_feedback_color 0xff61afef
+yabai -m config split_ratio 0.50
+yabai -m config auto_balance off
+yabai -m config mouse_modifier fn
+yabai -m config mouse_action1 move
+yabai -m config mouse_action2 resize
+yabai -m config mouse_drop_action swap
 
 # SketchyBar integration
-yabai -m config external_bar                 all:45:0
+yabai -m config external_bar all:25:0
 
 # SketchyBar signals removed - sketchybar uses native space_change event
 
 # general space settings - beautiful spacing
-yabai -m config layout                       bsp
-yabai -m config top_padding                  10
-yabai -m config bottom_padding               6
-yabai -m config left_padding                 6
-yabai -m config right_padding                6
-yabai -m config window_gap                   6
+yabai -m config layout bsp
+yabai -m config top_padding 4
+yabai -m config bottom_padding 0
+yabai -m config left_padding 0
+yabai -m config right_padding 0
+yabai -m config window_gap 4
 
 # space labels
 # Display 1 (LG TV - Main): spaces 1-4
@@ -45,7 +45,7 @@ yabai -m config window_gap                   6
 # Space 6 (alt+6): Elgato Teleprompter
 # Space 7 (alt+7): Arzopa Portable Monitor
 yabai -m space 1 --label social 2>/dev/null || true
-yabai -m space 2 --label work 2>/dev/null || true
+yabai -m space 2 --label Dev 2>/dev/null || true
 yabai -m space 3 --label development 2>/dev/null || true
 yabai -m space 4 --label others 2>/dev/null || true
 yabai -m space 5 --label five 2>/dev/null || true
@@ -61,10 +61,24 @@ yabai -m rule --add app="^Alfred$" manage=off
 yabai -m rule --add app="^1Password" manage=off
 
 # ─────────────────────────────────────────────────────────────────────────────────
-# SIGNALS - Auto-fix problematic windows
+# SIGNALS
 # ─────────────────────────────────────────────────────────────────────────────────
 
-# Focus next window when one is closed
-yabai -m signal --add event=window_destroyed action="yabai -m window --focus recent || yabai -m window --focus first" label="focus_on_destroy"
+# Intentionally no auto-focus on window_destroyed.
+# The old focus_on_destroy signal could jump to unrelated spaces/windows while working.
+# Use skhd's manual rescue binding (alt + ctrl + space) when macOS leaves no useful focus.
+
+# Ghostty native tabs surface as separate windows through macOS' Accessibility API,
+# so yabai tiles each new tab and breaks the layout. Re-apply the bsp layout whenever
+# a Ghostty window appears or disappears to re-normalise the space (official workaround).
+yabai -m signal --add app='^Ghostty$' event=window_created action='yabai -m space --layout bsp'
+yabai -m signal --add app='^Ghostty$' event=window_destroyed action='yabai -m space --layout bsp'
+
+# When the external monitor connects, keep only "social" (space 1) on the
+# MacBook screen and relocate every other existing space onto the external
+# display, instead of leaving macOS' auto-created empty space there.
+# Disconnecting needs no handling: macOS merges the display's spaces back
+# onto the laptop screen on its own, preserving them for the next reconnect.
+yabai -m signal --add event=display_added action="$HOME/.config/yabai/move-spaces-to-external.sh \$YABAI_DISPLAY_INDEX"
 
 echo "yabai configuration loaded.."

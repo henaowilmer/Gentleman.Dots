@@ -11,6 +11,9 @@ backup
 # OpenCode directory
 .opencode/
 
+# Local CodeGraph index
+.codegraph/
+
 # OS-specific files
 .DS_Store
 Thumbs.db
@@ -24,3 +27,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Local Pi runtime state
+.atl/
+.pi/
+.codegraph/

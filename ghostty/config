@@ -46,21 +46,8 @@ macos-option-as-alt = left
 keybind = alt+left=unbind
 keybind = alt+right=unbind
 
-# Split Management
-keybind = alt+v=new_split:right
-keybind = alt+d=new_split:down
-
-# Split Navigation
-keybind = alt+k=goto_split:up
-keybind = alt+j=goto_split:down
-keybind = alt+h=goto_split:left
-keybind = alt+l=goto_split:right
-
-# Split Resize
-keybind = ctrl+shift+j=resize_split:up,10
-keybind = ctrl+shift+k=resize_split:down,10
-keybind = ctrl+shift+h=resize_split:left,10
-keybind = ctrl+shift+l=resize_split:right,10
+# Multiplexer-style shortcuts are intentionally not bound in Ghostty.
+# Herdr owns Ctrl+a and pane/tab/workspace navigation inside the terminal.
 
 # Miscellaneous
 keybind = cmd+k=clear_screen
@@ -68,6 +55,8 @@ keybind = shift+enter=text:\x1b\r
 
 # Open file with nvim (write 'nvim' first, then use this keybinding)
 keybind = alt+s=write_screen_file:paste
+# Open full scrollback with nvim: write 'nvim ' first, then press Ctrl+Shift+s.
+keybind = ctrl+shift+s=write_scrollback_file:paste
 
 
 # ┌──────────────────────────────────────────────────────────────────────────────┐
