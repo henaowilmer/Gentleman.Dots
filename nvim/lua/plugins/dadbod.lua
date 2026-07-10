@@ -290,6 +290,65 @@ end
 
 local tunnel_state = {}
 
+-- Returns true if something is accepting TCP connections on 127.0.0.1:port.
+-- Uses libuv directly so it works in Termux where `nc`/`ss` may be missing.
+local function is_port_listening(port, timeout_ms)
+  local uv = vim.uv or vim.loop
+  port = tonumber(port)
+  if not port then
+    return false
+  end
+  timeout_ms = timeout_ms or 800
+
+  local client = uv.new_tcp()
+  local done = false
+  local reachable = false
+
+  local function finish(success)
+    if done then
+      return
+    end
+    done = true
+    reachable = success
+    if client and not client:is_closing() then
+      client:close()
+    end
+  end
+
+  local ok = pcall(function()
+    client:connect("127.0.0.1", port, function(err)
+      finish(err == nil)
+    end)
+  end)
+
+  if not ok then
+    finish(false)
+    return false
+  end
+
+  vim.wait(timeout_ms, function()
+    return done
+  end, 20)
+  finish(false)
+
+  return reachable
+end
+
+-- Kills a stale ssh tunnel still holding this connection's local forward.
+-- Only structured (non custom-command) tunnels can be identified safely.
+local function kill_stale_tunnel(spec)
+  if spec.cmd and spec.cmd ~= "" then
+    return
+  end
+  if spec.local_port == "" or spec.remote_host == "" or spec.remote_port == "" then
+    return
+  end
+
+  local forward = string.format("%s:%s:%s", spec.local_port, spec.remote_host, spec.remote_port)
+  local pattern = "ssh .*-L .*" .. forward:gsub("%.", "\\.")
+  vim.fn.system({ "pkill", "-f", pattern })
+end
+
 local function build_tunnel_command(spec)
   if spec.cmd and spec.cmd ~= "" then
     return spec.cmd
@@ -307,6 +366,12 @@ local function build_tunnel_command(spec)
   local cmd = {
     "ssh",
     "-fN",
+    "-o", "ExitOnForwardFailure=yes",
+    "-o", "ConnectTimeout=10",
+    "-o", "ServerAliveInterval=30",
+    "-o", "ServerAliveCountMax=3",
+    "-o", "BatchMode=yes",
+    "-o", "StrictHostKeyChecking=accept-new",
     "-L",
     string.format("%s:%s:%s", spec.local_port, spec.remote_host, spec.remote_port),
   }
@@ -339,22 +404,42 @@ local function ensure_tunnels(project_root, tunnels)
   tunnel_state[project_key] = tunnel_state[project_key] or {}
 
   for name, spec in pairs(tunnels) do
-    if not tunnel_state[project_key][name] then
+    local local_port = spec.local_port
+
+    -- Tunnel already up and listening (this or a previous session) -> reuse it.
+    if local_port and local_port ~= "" and is_port_listening(local_port) then
+      tunnel_state[project_key][name] = true
+    else
       local cmd = build_tunnel_command(spec)
       if not cmd then
         vim.notify("Dadbod tunnel config incomplete for connection: " .. tostring(name), vim.log.levels.WARN)
       else
-        local result
-        if type(cmd) == "table" then
-          result = vim.fn.system(cmd)
-        else
-          result = vim.fn.system(cmd)
+        local established = false
+        local last_result = ""
+
+        -- Two attempts: kill any stale ssh holding the port, re-open, then verify.
+        for _ = 1, 2 do
+          kill_stale_tunnel(spec)
+          last_result = vim.fn.system(cmd)
+
+          if local_port and local_port ~= "" then
+            vim.wait(2000, function()
+              return is_port_listening(local_port, 300)
+            end, 100)
+            established = is_port_listening(local_port, 300)
+          else
+            established = vim.v.shell_error == 0
+          end
+
+          if established then
+            break
+          end
         end
 
-        if vim.v.shell_error == 0 then
-          tunnel_state[project_key][name] = true
-        else
-          local details = vim.trim(result or "")
+        tunnel_state[project_key][name] = established
+
+        if not established then
+          local details = vim.trim(last_result or "")
           if details == "" then
             details = "unknown error"
           end
