@@ -262,8 +262,6 @@ sketchybar --add item claude_quota_weekly left \
   label.width=28 \
   label.align=right \
   background.drawing=off \
-  update_freq=60 \
-  script="$PLUGIN_DIR/ai_quota.sh claude weekly" \
   click_script="$PLUGIN_DIR/ai_quota.sh claude weekly click"
 
 # ─────────────────────────────────────────────────────────────────────────────────

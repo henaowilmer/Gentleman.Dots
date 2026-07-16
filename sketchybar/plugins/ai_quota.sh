@@ -49,7 +49,27 @@ JQ_BIN="$(command -v jq 2>/dev/null || true)"
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/sketchybar"
 CACHE_FILE="$CACHE_DIR/ai_quota_${MODE}_${WINDOW}.state"
 DETAIL_CACHE_FILE="$CACHE_DIR/ai_quota_${MODE}.detail"
+CLAUDE_RATE_LIMITS_FILE="$CACHE_DIR/claude-rate-limits.json"
+CLAUDE_USAGE_FILE="$HOME/.claude.json"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+atomic_write() {
+  local target="$1"
+  local value="$2"
+  local temp
+
+  (umask 077 && mkdir -p "$CACHE_DIR") 2>/dev/null || return
+  temp="$(mktemp "$target.XXXXXX")" || return
+  chmod 600 "$temp" 2>/dev/null || {
+    rm -f "$temp"
+    return
+  }
+  if ! printf '%s\n' "$value" > "$temp"; then
+    rm -f "$temp"
+    return
+  fi
+  mv -f "$temp" "$target"
+}
 
 read_cache() {
   if [ -f "$CACHE_FILE" ]; then
@@ -60,8 +80,7 @@ read_cache() {
 write_cache() {
   local color="$1"
   local label="$2"
-  mkdir -p "$CACHE_DIR" 2>/dev/null || true
-  printf '%s|%s\n' "$color" "$label" > "$CACHE_FILE" 2>/dev/null || true
+  atomic_write "$CACHE_FILE" "$color|$label" 2>/dev/null || true
 }
 
 read_detail_cache() {
@@ -156,8 +175,7 @@ write_detail_cache() {
   if [ -z "$detail" ]; then
     return
   fi
-  mkdir -p "$CACHE_DIR" 2>/dev/null || true
-  printf '%s\n' "$detail" > "$DETAIL_CACHE_FILE" 2>/dev/null || true
+  atomic_write "$DETAIL_CACHE_FILE" "$detail" 2>/dev/null || true
 }
 
 set_item() {
@@ -373,7 +391,7 @@ PY
     return
   fi
 
-  now="$(date +%s)"
+  now="${AI_QUOTA_NOW:-$(date +%s)}"
   diff=$((reset_at - now))
 
   if [ "$diff" -le 0 ]; then
@@ -407,54 +425,293 @@ pick_color_by_pct() {
   fi
 }
 
-extract_access_token_from_json() {
-  local raw="$1"
-  printf '%s' "$raw" | "$JQ_BIN" -r '.claudeAiOauth.accessToken // .oauth.accessToken // .accessToken // .access_token // .token // empty' 2>/dev/null
-}
+# When the current read is unavailable (e.g. a forced click-refresh that gets
+# rate-limited), the sibling weekly panel must NOT be blanked to "--": that
+# would wipe a value the weekly script already fetched. Restore it from its own
+# weekly cache instead, and only fall back to "--" when no cache exists.
+restore_sibling_weekly() {
+  local item="$1"
+  local weekly_cache="$CACHE_DIR/ai_quota_${MODE}_weekly.state"
+  local cached cached_label pct color
 
-get_claude_oauth_json() {
-  local token_raw=""
-  local token=""
-  local response=""
-
-  if [ "$(uname -s)" = "Darwin" ]; then
-    token_raw="$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null || true)"
-    if [ -n "$token_raw" ]; then
-      if printf '%s' "$token_raw" | grep -q '^[[:space:]]*[{\[]'; then
-        token="$(extract_access_token_from_json "$token_raw")"
-      else
-        token="$token_raw"
-      fi
+  if [ -f "$weekly_cache" ]; then
+    cached="$(cat "$weekly_cache" 2>/dev/null)"
+    cached_label="${cached#*|}"
+    if [ -n "$cached_label" ] && [ "$cached_label" != "$cached" ] && [ "$cached_label" != "--" ]; then
+      color="$WHITE"
+      pct="${cached_label%%%}"
+      case "$pct" in
+        ''|*[!0-9]*) ;;
+        *) color="$(pick_color_by_pct "$pct")" ;;
+      esac
+      sketchybar --set "$item" label="$cached_label" label.color="$color" >/dev/null 2>&1 || true
+      return 0
     fi
   fi
 
-  if [ -z "$token" ] && [ -f "$HOME/.claude/.credentials.json" ]; then
-    token="$("$JQ_BIN" -r '.claudeAiOauth.accessToken // .oauth.accessToken // .accessToken // .access_token // .token // empty' "$HOME/.claude/.credentials.json" 2>/dev/null)"
-  fi
-
-  if [ -z "$token" ]; then
-    return 1
-  fi
-
-  response="$(curl -fsS --max-time 6 \
-    --retry 1 \
-    --retry-delay 1 \
-    --retry-all-errors \
-    --retry-max-time 10 \
-    -H "Authorization: Bearer $token" \
-    -H "anthropic-beta: oauth-2025-04-20" \
-    "https://api.anthropic.com/api/oauth/usage" 2>/dev/null || true)"
-
-  if [ -z "$response" ]; then
-    return 1
-  fi
-
-  if ! printf '%s' "$response" | "$JQ_BIN" -e . >/dev/null 2>&1; then
-    return 1
-  fi
-
-  printf '%s' "$response"
+  sketchybar --set "$item" label="--" label.color="$DIM" >/dev/null 2>&1 || true
+  return 1
 }
+
+write_sibling_weekly_cache() {
+  local color="$1"
+  local label="$2"
+  local weekly_cache="$CACHE_DIR/ai_quota_${MODE}_weekly.state"
+
+  if [ "$label" = "--" ]; then
+    return
+  fi
+
+  atomic_write "$weekly_cache" "$color|$label" 2>/dev/null || true
+}
+
+mark_claude_unavailable() {
+  local reason="$1"
+  local item label
+
+  set_fallback
+  restore_sibling_weekly claude_quota_weekly
+
+  for item in claude_quota claude_quota_weekly; do
+    label="$(sketchybar --query "$item" 2>/dev/null | "$JQ_BIN" -r '.label.value // empty' 2>/dev/null)"
+    label="${label%!}"
+    if [ -z "$label" ] || [ "$label" = "--" ]; then
+      label="--"
+    fi
+    sketchybar --set "$item" label="${label}!" label.color="$YELLOW" >/dev/null 2>&1 || true
+  done
+
+  show_unavailable_detail "unavailable ($reason)"
+}
+
+# Global visibility toggle owned by ai_toggle.sh. When present, every AI panel
+# is hidden and per-provider layout logic must not re-draw anything.
+HIDDEN_STATE_FILE="$CACHE_DIR/ai_quota_hidden"
+
+# OpenAI (Plus) currently exposes only a weekly window; its API stopped sending
+# the 5h window (secondary_window: null). When there is no 5h value, collapse the
+# box to a single weekly panel instead of duplicating the weekly number in both
+# the primary and weekly slots. When OpenAI restores the 5h window, the split
+# view returns automatically with no further changes.
+apply_openai_split_layout() {
+  local five_h="$1"
+
+  # Never fight the global hide/show toggle.
+  if [ -f "$HIDDEN_STATE_FILE" ]; then
+    return
+  fi
+
+  if [ "$five_h" != "--" ]; then
+    sketchybar --set openai_quota_separator drawing=on \
+               --set openai_quota_weekly drawing=on >/dev/null 2>&1 || true
+  else
+    sketchybar --set openai_quota_separator drawing=off \
+               --set openai_quota_weekly drawing=off >/dev/null 2>&1 || true
+  fi
+}
+
+parse_reset_epoch() {
+  local value="$1"
+
+  if printf '%s' "$value" | grep -Eq '^[0-9]+$'; then
+    printf '%s' "$value"
+    return
+  fi
+
+  command -v python3 >/dev/null 2>&1 || return
+  python3 - "$value" <<'PY'
+import sys
+from datetime import datetime
+
+try:
+    value = sys.argv[1].replace("Z", "+00:00")
+    print(int(datetime.fromisoformat(value).timestamp()))
+except (ValueError, OverflowError):
+    pass
+PY
+}
+
+valid_percentage() {
+  printf '%s' "$1" | "$JQ_BIN" -eR 'tonumber | isfinite and . >= 0 and . <= 100' >/dev/null 2>&1
+}
+
+valid_epoch() {
+  case "$1" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  [ "$1" -gt 0 ] && [ "$1" -le 32503680000 ]
+}
+
+load_claude_candidate() {
+  local kind="$1"
+  local window="$2"
+  local file captured used reset
+
+  if [ "$kind" = "status-line" ]; then
+    file="$CLAUDE_RATE_LIMITS_FILE"
+    [ -f "$file" ] || return 1
+    captured="$("$JQ_BIN" -r '.captured_at // empty' "$file" 2>/dev/null)"
+    used="$("$JQ_BIN" -r --arg window "$window" '.[$window].used_percentage // empty' "$file" 2>/dev/null)"
+    reset="$("$JQ_BIN" -r --arg window "$window" '.[$window].resets_at // empty' "$file" 2>/dev/null)"
+  else
+    file="$CLAUDE_USAGE_FILE"
+    [ -f "$file" ] || return 1
+    captured="$("$JQ_BIN" -r '.cachedUsageUtilization.fetchedAtMs // empty | if type == "number" then (floor / 1000 | floor) else empty end' "$file" 2>/dev/null)"
+    used="$("$JQ_BIN" -r --arg window "$window" '.cachedUsageUtilization.utilization[$window].utilization // empty' "$file" 2>/dev/null)"
+    reset="$("$JQ_BIN" -r --arg window "$window" '.cachedUsageUtilization.utilization[$window].resets_at // empty' "$file" 2>/dev/null)"
+    reset="$(parse_reset_epoch "$reset")"
+  fi
+
+  valid_percentage "$used" || return 1
+  valid_epoch "$captured" || return 1
+  valid_epoch "$reset" || return 1
+  [ "$captured" -le $((CLAUDE_NOW + 300)) ] || return 1
+
+  CANDIDATE_REMAINING="$(printf '%s' "$used" | awk '{ printf "%d", 100 - $1 }')"
+  CANDIDATE_RESET="$reset"
+  CANDIDATE_SOURCE="$kind"
+  CANDIDATE_AGE=$((CLAUDE_NOW - captured))
+  [ "$CANDIDATE_AGE" -ge 0 ] || CANDIDATE_AGE=0
+  return 0
+}
+
+read_widget_value() {
+  local window="$1"
+  local file="$CACHE_DIR/ai_quota_claude_${window}.state"
+  local value
+
+  [ -f "$file" ] || return 1
+  value="$(cut -d '|' -f 2- "$file" 2>/dev/null)"
+  value="${value%!}"
+  value="${value%~}"
+  value="${value%%%}"
+  case "$value" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  [ "$value" -le 100 ] || return 1
+  printf '%s||widget-cache||old' "$value"
+}
+
+select_claude_window() {
+  local window="$1"
+  local kind old=""
+
+  for kind in status-line claude-cache; do
+    if load_claude_candidate "$kind" "$window"; then
+      if [ -z "$old" ]; then
+        old="$CANDIDATE_REMAINING|$CANDIDATE_RESET|$CANDIDATE_SOURCE|$CANDIDATE_AGE|old"
+      fi
+      if [ "$CANDIDATE_AGE" -le 3600 ] && [ "$CANDIDATE_RESET" -gt "$CLAUDE_NOW" ]; then
+        if [ "$CANDIDATE_AGE" -ge 900 ]; then
+          printf '%s|%s|%s|%s|stale' "$CANDIDATE_REMAINING" "$CANDIDATE_RESET" "$CANDIDATE_SOURCE" "$CANDIDATE_AGE"
+        else
+          printf '%s|%s|%s|%s|fresh' "$CANDIDATE_REMAINING" "$CANDIDATE_RESET" "$CANDIDATE_SOURCE" "$CANDIDATE_AGE"
+        fi
+        return
+      fi
+    fi
+  done
+
+  if [ -n "$old" ]; then
+    printf '%s' "$old"
+  else
+    read_widget_value "$( [ "$window" = "five_hour" ] && printf primary || printf weekly )" || printf '||||missing'
+  fi
+}
+
+format_age() {
+  local age="$1"
+  if [ -z "$age" ]; then
+    printf 'unknown age'
+  elif [ "$age" -lt 60 ]; then
+    printf '%ss old' "$age"
+  else
+    printf '%sm old' "$((age / 60))"
+  fi
+}
+
+render_claude_window() {
+  local item="$1" result="$2"
+  local value reset source age state marker color label
+  IFS='|' read -r value reset source age state <<< "$result"
+
+  marker=""
+  color="$DIM"
+  if [ -n "$value" ]; then
+    color="$(pick_color_by_pct "$value")"
+    case "$state" in
+      stale) marker="~" ; color="$YELLOW" ;;
+      old) marker="!" ; color="$YELLOW" ;;
+    esac
+    label="${value}%${marker}"
+    if [ "$state" != "old" ]; then
+      CACHE_FILE="$CACHE_DIR/ai_quota_claude_$( [ "$item" = "claude_quota" ] && printf primary || printf weekly ).state"
+      write_cache "$ORANGE" "${value}%"
+    fi
+  else
+    label="--!"
+    color="$YELLOW"
+  fi
+  sketchybar --set "$item" icon.color="$ORANGE" label="$label" label.color="$color" >/dev/null 2>&1 || true
+}
+
+claude_detail_window() {
+  local name="$1" result="$2"
+  local value reset source age state
+  IFS='|' read -r value reset source age state <<< "$result"
+  if [ -z "$value" ]; then
+    printf '%s unavailable' "$name"
+    return
+  fi
+  if [ -n "$reset" ]; then
+    reset="$(fmt_reset_remaining "$reset")"
+  else
+    reset="unknown"
+  fi
+  printf '%s %s%% (reset %s, %s, %s, %s)' "$name" "$value" "$reset" "$source" "$(format_age "$age")" "$state"
+}
+
+run_claude_local() {
+  local primary weekly detail
+  CLAUDE_NOW="${AI_QUOTA_NOW:-$(date +%s)}"
+  case "$CLAUDE_NOW" in
+    ''|*[!0-9]*) CLAUDE_NOW="$(date +%s)" ;;
+  esac
+
+  primary="$(select_claude_window five_hour)"
+  weekly="$(select_claude_window seven_day)"
+  render_claude_window claude_quota "$primary"
+  render_claude_window claude_quota_weekly "$weekly"
+
+  if [[ "$primary" == '||||missing' && "$weekly" == '||||missing' ]]; then
+    detail="Claude quota unavailable; waiting for the next Claude response"
+  else
+    detail="$(claude_detail_window 5h "$primary") | $(claude_detail_window 7d "$weekly")"
+    if [[ "$primary" == *'|old' || "$weekly" == *'|old' ||
+          "$primary" == *'|stale' || "$weekly" == *'|stale' ||
+          "$primary" == '||||missing' || "$weekly" == '||||missing' ]]; then
+      detail="$detail; waiting for the next Claude response"
+    fi
+  fi
+  write_detail_cache "$detail"
+  show_detail_box "$detail"
+}
+
+if [ -z "$JQ_BIN" ]; then
+  set_fallback
+  exit 0
+fi
+
+show_refresh_feedback
+
+# Claude is intentionally local-only. Return before resolving or invoking
+# opencode-quota so periodic updates and clicks can never reach Anthropic.
+case "$MODE" in
+  anthropic|claude)
+    run_claude_local
+    exit 0
+    ;;
+esac
 
 if [ ! -x "$QUOTA_BIN" ]; then
   QUOTA_BIN="$(command -v opencode-quota 2>/dev/null || true)"
@@ -465,20 +722,10 @@ if [ -z "$QUOTA_BIN" ]; then
   exit 0
 fi
 
-if [ -z "$JQ_BIN" ]; then
-  set_fallback
-  exit 0
-fi
-
-show_refresh_feedback
-
 PROVIDER_ID=""
 case "$MODE" in
   openai)
     PROVIDER_ID="openai"
-    ;;
-  anthropic|claude)
-    PROVIDER_ID="anthropic"
     ;;
   copilot)
     PROVIDER_ID="copilot"
@@ -531,7 +778,7 @@ case "$MODE" in
     OPENAI_7D_RESET="$(fmt_reset_remaining "$OPENAI_7D_RESET_RAW")"
 
     if [ "$OPENAI_5H" = "--" ] && [ "$OPENAI_7D" = "--" ]; then
-      sketchybar --set openai_quota_weekly label="--" label.color="$DIM" >/dev/null 2>&1 || true
+      restore_sibling_weekly openai_quota_weekly
       set_fallback
       exit 0
     fi
@@ -567,137 +814,10 @@ case "$MODE" in
 
     sketchybar --set openai_quota_weekly label="$OPENAI_WEEKLY_LABEL" label.color="$OPENAI_WEEKLY_COLOR" >/dev/null 2>&1 || true
 
+    apply_openai_split_layout "$OPENAI_5H"
+
     write_detail_cache "${OPENAI_5H}% (${OPENAI_5H_RESET}) | ${OPENAI_7D}% (${OPENAI_7D_RESET})"
     show_detail_box "${OPENAI_5H}% (${OPENAI_5H_RESET}) | ${OPENAI_7D}% (${OPENAI_7D_RESET})"
-    ;;
-
-  anthropic|claude)
-    CLAUDE_5H_RAW="$(printf '%s' "$JSON" | "$JQ_BIN" -r '((.providers.anthropic.entries // []) | map(select((.window // "") == "5h" and .percentRemaining != null)) | .[0].percentRemaining) // empty')"
-    CLAUDE_5H_RESET_RAW="$(printf '%s' "$JSON" | "$JQ_BIN" -r '((.providers.anthropic.entries // []) | map(select((.window // "") == "5h" and .resetAt != null)) | .[0].resetAt) // empty')"
-    CLAUDE_WEEKLY_RAW="$(printf '%s' "$JSON" | "$JQ_BIN" -r '((.providers.anthropic.entries // []) | map(select(((.window // "") | ascii_downcase | test("week")) and .percentRemaining != null)) | .[0].percentRemaining) // empty')"
-    CLAUDE_WEEKLY_RESET_RAW="$(printf '%s' "$JSON" | "$JQ_BIN" -r '((.providers.anthropic.entries // []) | map(select(((.window // "") | ascii_downcase | test("week")) and .resetAt != null)) | .[0].resetAt) // empty')"
-
-    CLAUDE_5H="$(fmt_pct "$CLAUDE_5H_RAW")"
-    CLAUDE_5H_RESET="$(fmt_reset_remaining "$CLAUDE_5H_RESET_RAW")"
-    CLAUDE_WEEKLY="$(fmt_pct "$CLAUDE_WEEKLY_RAW")"
-    CLAUDE_WEEKLY_RESET="$(fmt_reset_remaining "$CLAUDE_WEEKLY_RESET_RAW")"
-
-    if [ "$CLAUDE_5H" = "--" ] || [ "$REFRESHING" -eq 1 ] || [ "$CACHE_AGE_SECONDS" -gt 300 ]; then
-      CLAUDE_OAUTH_JSON="$(get_claude_oauth_json || true)"
-      if [ -n "$CLAUDE_OAUTH_JSON" ]; then
-        CLAUDE_OAUTH_5H_USED="$(printf '%s' "$CLAUDE_OAUTH_JSON" | "$JQ_BIN" -r '
-          def fiveh:
-            .five_hour // .fiveHour //
-            .quota.five_hour // .quota.fiveHour //
-            .usage.five_hour // .usage.fiveHour //
-            .rate_limits.five_hour // .rate_limits.fiveHour //
-            .rateLimits.five_hour // .rateLimits.fiveHour //
-            .oauth_usage.five_hour // .oauth_usage.fiveHour //
-            .oauthUsage.five_hour // .oauthUsage.fiveHour;
-          def used($w):
-            [$w.utilization, $w.used_percentage, $w.usedPercentage, $w.used_percent, $w.usedPercent, $w.percent_used, $w.percentUsed]
-            | map(select(. != null))
-            | .[0];
-          fiveh as $w
-          | if ($w | type) == "object" then (used($w) // empty) else empty end
-        ' 2>/dev/null)"
-
-        CLAUDE_OAUTH_5H_RESET_RAW="$(printf '%s' "$CLAUDE_OAUTH_JSON" | "$JQ_BIN" -r '
-          def fiveh:
-            .five_hour // .fiveHour //
-            .quota.five_hour // .quota.fiveHour //
-            .usage.five_hour // .usage.fiveHour //
-            .rate_limits.five_hour // .rate_limits.fiveHour //
-            .rateLimits.five_hour // .rateLimits.fiveHour //
-            .oauth_usage.five_hour // .oauth_usage.fiveHour //
-            .oauthUsage.five_hour // .oauthUsage.fiveHour;
-          fiveh as $w
-          | if ($w | type) == "object" then ($w.resets_at // $w.resetsAt // $w.reset_at // $w.resetAt // $w.reset_time // $w.resetTime // $w.reset // empty) else empty end
-        ' 2>/dev/null)"
-
-        CLAUDE_OAUTH_WEEKLY_USED="$(printf '%s' "$CLAUDE_OAUTH_JSON" | "$JQ_BIN" -r '
-          def weekly:
-            .seven_day // .sevenDay //
-            .quota.seven_day // .quota.sevenDay //
-            .usage.seven_day // .usage.sevenDay //
-            .rate_limits.seven_day // .rate_limits.sevenDay //
-            .rateLimits.seven_day // .rateLimits.sevenDay //
-            .oauth_usage.seven_day // .oauth_usage.sevenDay //
-            .oauthUsage.seven_day // .oauthUsage.sevenDay;
-          def used($w):
-            [$w.utilization, $w.used_percentage, $w.usedPercentage, $w.used_percent, $w.usedPercent, $w.percent_used, $w.percentUsed]
-            | map(select(. != null))
-            | .[0];
-          weekly as $w
-          | if ($w | type) == "object" then (used($w) // empty) else empty end
-        ' 2>/dev/null)"
-
-        CLAUDE_OAUTH_WEEKLY_RESET_RAW="$(printf '%s' "$CLAUDE_OAUTH_JSON" | "$JQ_BIN" -r '
-          def weekly:
-            .seven_day // .sevenDay //
-            .quota.seven_day // .quota.sevenDay //
-            .usage.seven_day // .usage.sevenDay //
-            .rate_limits.seven_day // .rate_limits.sevenDay //
-            .rateLimits.seven_day // .rateLimits.sevenDay //
-            .oauth_usage.seven_day // .oauth_usage.sevenDay //
-            .oauthUsage.seven_day // .oauthUsage.sevenDay;
-          weekly as $w
-          | if ($w | type) == "object" then ($w.resets_at // $w.resetsAt // $w.reset_at // $w.resetAt // $w.reset_time // $w.resetTime // $w.reset // empty) else empty end
-        ' 2>/dev/null)"
-
-        if [ -n "$CLAUDE_OAUTH_5H_USED" ]; then
-          CLAUDE_5H_RAW_FROM_OAUTH="$(printf '%s' "$CLAUDE_OAUTH_5H_USED" | awk '{ printf "%d", 100 - $1 }')"
-          CLAUDE_5H="$(fmt_pct "$CLAUDE_5H_RAW_FROM_OAUTH")"
-          CLAUDE_5H_RESET="$(fmt_reset_remaining "$CLAUDE_OAUTH_5H_RESET_RAW")"
-        fi
-
-        if [ -n "$CLAUDE_OAUTH_WEEKLY_USED" ]; then
-          CLAUDE_WEEKLY_RAW_FROM_OAUTH="$(printf '%s' "$CLAUDE_OAUTH_WEEKLY_USED" | awk '{ printf "%d", 100 - $1 }')"
-          CLAUDE_WEEKLY="$(fmt_pct "$CLAUDE_WEEKLY_RAW_FROM_OAUTH")"
-          CLAUDE_WEEKLY_RESET="$(fmt_reset_remaining "$CLAUDE_OAUTH_WEEKLY_RESET_RAW")"
-        fi
-      fi
-    fi
-
-    if [ "$CLAUDE_5H" = "--" ] && [ "$CLAUDE_WEEKLY" = "--" ]; then
-      sketchybar --set claude_quota_weekly label="--" label.color="$DIM" >/dev/null 2>&1 || true
-      if ! show_cached_detail_box; then
-        show_unavailable_detail "unavailable (rate limit/network)"
-      fi
-      set_fallback
-      exit 0
-    fi
-
-    if [ "$WINDOW" = "weekly" ]; then
-      CLAUDE_MAIN_VALUE="$CLAUDE_WEEKLY"
-    else
-      CLAUDE_MAIN_VALUE="$CLAUDE_5H"
-      if [ "$CLAUDE_MAIN_VALUE" = "--" ]; then
-        CLAUDE_MAIN_VALUE="$CLAUDE_WEEKLY"
-      fi
-    fi
-
-    if [ "$CLAUDE_MAIN_VALUE" != "--" ]; then
-      COLOR="$(pick_color_by_pct "$CLAUDE_MAIN_VALUE")"
-      CLAUDE_LABEL="${CLAUDE_MAIN_VALUE}%"
-    else
-      COLOR="$(pick_color_by_pct "$CLAUDE_WEEKLY")"
-      CLAUDE_LABEL="${CLAUDE_WEEKLY}%"
-    fi
-
-    set_item "$ORANGE" "$CLAUDE_LABEL" "$COLOR"
-
-    CLAUDE_WEEKLY_LABEL="--"
-    CLAUDE_WEEKLY_COLOR="$DIM"
-    if [ "$CLAUDE_WEEKLY" != "--" ]; then
-      CLAUDE_WEEKLY_LABEL="${CLAUDE_WEEKLY}%"
-      CLAUDE_WEEKLY_COLOR="$(pick_color_by_pct "$CLAUDE_WEEKLY")"
-    fi
-
-    sketchybar --set claude_quota_weekly label="$CLAUDE_WEEKLY_LABEL" label.color="$CLAUDE_WEEKLY_COLOR" >/dev/null 2>&1 || true
-
-    write_detail_cache "${CLAUDE_5H}% (${CLAUDE_5H_RESET}) | ${CLAUDE_WEEKLY}% (${CLAUDE_WEEKLY_RESET})"
-    show_detail_box "${CLAUDE_5H}% (${CLAUDE_5H_RESET}) | ${CLAUDE_WEEKLY}% (${CLAUDE_WEEKLY_RESET})"
     ;;
 
   copilot)
@@ -733,7 +853,7 @@ case "$MODE" in
     OC_MONTHLY_RESET="$(fmt_reset_remaining "$OC_MONTHLY_RESET_RAW")"
 
     if [ "$OC_5H" = "--" ] && [ "$OC_WEEKLY" = "--" ]; then
-      sketchybar --set opencode_quota_weekly label="--" label.color="$DIM" >/dev/null 2>&1 || true
+      restore_sibling_weekly opencode_quota_weekly
       if ! show_cached_detail_box; then
         show_unavailable_detail "unavailable (provider not detected)"
       fi

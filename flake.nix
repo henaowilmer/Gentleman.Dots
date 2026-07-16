@@ -147,6 +147,40 @@
         };
     in
     {
+      checks = builtins.listToAttrs (map (system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in
+        {
+          name = system;
+          value.ai-quota = pkgs.runCommand "ai-quota-test" {
+            nativeBuildInputs = with pkgs; [
+              bash
+              coreutils
+              gawk
+              git
+              gnugrep
+              gnused
+              jq
+              python3
+            ];
+          } ''
+            export HOME="$TMPDIR/home"
+            export XDG_CACHE_HOME="$TMPDIR/cache"
+            test_root="$TMPDIR/ai-quota-test-source"
+            mkdir -p "$HOME" "$XDG_CACHE_HOME" \
+              "$test_root/claude" \
+              "$test_root/sketchybar/plugins" \
+              "$test_root/sketchybar/tests"
+            cp ${./claude/statusline.sh} "$test_root/claude/statusline.sh"
+            cp ${./sketchybar/plugins/ai_quota.sh} "$test_root/sketchybar/plugins/ai_quota.sh"
+            cp ${./sketchybar/sketchybarrc} "$test_root/sketchybar/sketchybarrc"
+            cp ${./sketchybar/tests/ai_quota_test.sh} "$test_root/sketchybar/tests/ai_quota_test.sh"
+            bash "$test_root/sketchybar/tests/ai_quota_test.sh"
+            touch "$out"
+          '';
+        }) supportedSystems);
+
       # Home Manager configurations for each system
       homeConfigurations = {
         # macOS system configurations
