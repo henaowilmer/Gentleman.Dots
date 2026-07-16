@@ -656,11 +656,11 @@ render_claude_window() {
 }
 
 claude_detail_window() {
-  local name="$1" result="$2"
+  local result="$2"
   local value reset source age state
   IFS='|' read -r value reset source age state <<< "$result"
   if [ -z "$value" ]; then
-    printf '%s unavailable' "$name"
+    printf 'unavailable'
     return
   fi
   if [ -n "$reset" ]; then
@@ -668,7 +668,7 @@ claude_detail_window() {
   else
     reset="unknown"
   fi
-  printf '%s %s%% (reset %s, %s, %s, %s)' "$name" "$value" "$reset" "$source" "$(format_age "$age")" "$state"
+  printf '%s%% (%s)' "$value" "$reset"
 }
 
 run_claude_local() {
@@ -684,14 +684,9 @@ run_claude_local() {
   render_claude_window claude_quota_weekly "$weekly"
 
   if [[ "$primary" == '||||missing' && "$weekly" == '||||missing' ]]; then
-    detail="Claude quota unavailable; waiting for the next Claude response"
+    detail="quota unavailable"
   else
     detail="$(claude_detail_window 5h "$primary") | $(claude_detail_window 7d "$weekly")"
-    if [[ "$primary" == *'|old' || "$weekly" == *'|old' ||
-          "$primary" == *'|stale' || "$weekly" == *'|stale' ||
-          "$primary" == '||||missing' || "$weekly" == '||||missing' ]]; then
-      detail="$detail; waiting for the next Claude response"
-    fi
   fi
   write_detail_cache "$detail"
   show_detail_box "$detail"

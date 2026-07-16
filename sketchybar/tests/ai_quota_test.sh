@@ -108,8 +108,9 @@ assert_contains "$LOG_FILE" '--set claude_quota_weekly icon.color=0xffff9f1c lab
 
 : > "$LOG_FILE"
 "$PLUGIN" claude click
-assert_contains "$LOG_FILE" '5h 75% (reset 1h 0m, status-line, 0s old, fresh)' "click detail must report source and age"
-assert_contains "$LOG_FILE" '7d 60% (reset 1d 0h, status-line, 0s old, fresh)' "click detail must report both windows"
+assert_contains "$LOG_FILE" 'label=75% (1h 0m) | 60% (1d 0h) label.color=' "click detail must use the exact compact format"
+assert_not_contains "$LOG_FILE" 'status-line' "click detail must not expose the local source"
+assert_not_contains "$LOG_FILE" 'waiting for the next Claude response' "click detail must not include refresh guidance when values exist"
 [ ! -s "$NETWORK_LOG" ] || fail "Claude click mode must remain local-only"
 
 jq --argjson captured_at "$((NOW - 900))" '.captured_at = $captured_at' "$RATE_FILE" > "$RATE_FILE.tmp"
@@ -127,8 +128,8 @@ touch "$HOME/.claude.json"
 : > "$LOG_FILE"
 "$PLUGIN" claude click
 assert_contains "$LOG_FILE" 'label=70%~' "fallback freshness must use fetchedAtMs instead of file mtime"
-assert_contains "$LOG_FILE" 'claude-cache, 20m old, stale' "fallback detail must identify its source and embedded age"
-assert_contains "$LOG_FILE" 'waiting for the next Claude response' "stale click detail must explain how it refreshes"
+assert_contains "$LOG_FILE" 'label=70% (1h 0m) | 50% (1d 0h) label.color=' "stale click detail must remain compact"
+assert_not_contains "$LOG_FILE" 'claude-cache' "stale click detail must not expose the local source"
 
 cat > "$RATE_FILE" <<EOF
 {"captured_at":$NOW,"five_hour":{"used_percentage":25,"resets_at":$((NOW + 3600))}}
@@ -140,8 +141,7 @@ EOF
 "$PLUGIN" claude click
 assert_contains "$LOG_FILE" 'label=75%' "5h must select the independently available status-line window"
 assert_contains "$LOG_FILE" 'label=50%' "7d must fall back independently to cachedUsageUtilization"
-assert_contains "$LOG_FILE" '5h 75% (reset 1h 0m, status-line, 0s old, fresh)' "mixed-source detail must identify the status-line window"
-assert_contains "$LOG_FILE" '7d 50% (reset 1d 0h, claude-cache, 0s old, fresh)' "mixed-source detail must identify the fallback window"
+assert_contains "$LOG_FILE" 'label=75% (1h 0m) | 50% (1d 0h) label.color=' "mixed-source detail must remain compact"
 
 cat > "$RATE_FILE" <<EOF
 {"captured_at":$((NOW - 3700)),"five_hour":{"used_percentage":20,"resets_at":$((NOW + 300))},"seven_day":{"used_percentage":150,"resets_at":$((NOW + 300))}}
@@ -151,7 +151,7 @@ rm -f "$HOME/.claude.json" "$XDG_CACHE_HOME/sketchybar/ai_quota_claude_weekly.st
 "$PLUGIN" claude click
 assert_contains "$LOG_FILE" 'label=80%!' "over-60-minute data may be retained only as old"
 assert_contains "$LOG_FILE" '--set claude_quota_weekly icon.color=0xffff9f1c label=--!' "invalid windows must fail independently"
-assert_contains "$LOG_FILE" 'waiting for the next Claude response' "old or missing data must explain how it refreshes"
+assert_contains "$LOG_FILE" 'label=80% (5m) | unavailable label.color=' "missing windows must use a concise truthful detail fallback"
 [ ! -s "$NETWORK_LOG" ] || fail "all Claude scenarios must avoid network-capable commands"
 
 cat > "$RATE_FILE" <<EOF
