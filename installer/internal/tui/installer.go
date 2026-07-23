@@ -53,6 +53,8 @@ func executeStep(stepID string, m *Model) error {
 		return stepInstallHomebrew(m)
 	case "deps":
 		return stepInstallDeps(m)
+	case "posting":
+		return stepInstallPosting(m)
 	case "xcode":
 		return stepInstallXcode(m)
 	case "terminal":
@@ -263,6 +265,61 @@ func stepInstallDeps(m *Model) error {
 			"Failed to install base dependencies on Debian/Ubuntu",
 			result.Error)
 	}
+	return nil
+}
+
+func stepInstallPosting(m *Model) error {
+	stepID := "posting"
+	if !m.SystemInfo.IsTermux && m.Choices.OS != "termux" {
+		return nil
+	}
+
+	SendLog(stepID, "Installing Posting dependencies...")
+	result := system.RunPkgInstall("python rust", nil, func(line string) {
+		SendLog(stepID, line)
+	})
+	if result.Error != nil {
+		return wrapStepError(stepID, "Install Posting", "Failed to install Posting dependencies", result.Error)
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return wrapStepError(stepID, "Install Posting", "Failed to determine the home directory", err)
+	}
+
+	venvDir := filepath.Join(homeDir, ".local", "share", "posting-termux")
+	postingPath := filepath.Join(venvDir, "bin", "posting")
+	linkDir := filepath.Join(homeDir, ".local", "bin")
+	linkPath := filepath.Join(linkDir, "posting")
+
+	if err := os.MkdirAll(linkDir, 0o755); err != nil {
+		return wrapStepError(stepID, "Install Posting", "Failed to create the local bin directory", err)
+	}
+
+	SendLog(stepID, "Creating Posting virtual environment...")
+	result = system.RunWithLogs(fmt.Sprintf("python -m venv %q", venvDir), nil, func(line string) {
+		SendLog(stepID, line)
+	})
+	if result.Error != nil {
+		return wrapStepError(stepID, "Install Posting", "Failed to create the Posting virtual environment", result.Error)
+	}
+
+	SendLog(stepID, "Installing Posting for Termux...")
+	result = system.RunWithLogs(fmt.Sprintf("%q install --upgrade %q", filepath.Join(venvDir, "bin", "pip"), "git+https://github.com/wahh-22/posting.git@termux"), nil, func(line string) {
+		SendLog(stepID, line)
+	})
+	if result.Error != nil {
+		return wrapStepError(stepID, "Install Posting", "Failed to install Posting from the Termux fork", result.Error)
+	}
+
+	result = system.RunWithLogs(fmt.Sprintf("ln -sf %q %q", postingPath, linkPath), nil, func(line string) {
+		SendLog(stepID, line)
+	})
+	if result.Error != nil {
+		return wrapStepError(stepID, "Install Posting", "Failed to link Posting into the local bin directory", result.Error)
+	}
+
+	SendLog(stepID, "✓ Posting installed")
 	return nil
 }
 

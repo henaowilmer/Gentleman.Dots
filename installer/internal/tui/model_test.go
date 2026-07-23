@@ -319,6 +319,51 @@ func TestSetupInstallSteps(t *testing.T) {
 	})
 }
 
+func TestSetupInstallStepsIncludesPostingOnTermux(t *testing.T) {
+	tests := []struct {
+		name      string
+		choicesOS string
+		isTermux  bool
+		wantStep  bool
+	}{
+		{name: "detected Termux", choicesOS: "linux", isTermux: true, wantStep: true},
+		{name: "selected Termux", choicesOS: "termux", isTermux: false, wantStep: true},
+		{name: "non-Termux", choicesOS: "linux", isTermux: false, wantStep: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := NewModel()
+			m.SystemInfo = &system.SystemInfo{
+				OS:       system.OSLinux,
+				IsTermux: tt.isTermux,
+			}
+			m.Choices = UserChoices{
+				OS:        tt.choicesOS,
+				Terminal:  "none",
+				Shell:     "fish",
+				WindowMgr: "none",
+			}
+
+			m.SetupInstallSteps()
+
+			hasPostingStep := false
+			for _, step := range m.Steps {
+				if step.ID == "posting" {
+					hasPostingStep = true
+					if step.Interactive {
+						t.Error("Posting installation must not be interactive on Termux")
+					}
+				}
+			}
+
+			if hasPostingStep != tt.wantStep {
+				t.Errorf("Posting installation step present = %t, want %t", hasPostingStep, tt.wantStep)
+			}
+		})
+	}
+}
+
 func TestStepStatus(t *testing.T) {
 	t.Run("status constants should have correct values", func(t *testing.T) {
 		if StatusPending != 0 {

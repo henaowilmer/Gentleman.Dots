@@ -532,6 +532,15 @@ func (m *Model) SetupInstallSteps() {
 		})
 	}
 
+	if isTermux {
+		m.Steps = append(m.Steps, InstallStep{
+			ID:          "posting",
+			Name:        "Install Posting",
+			Description: "Termux API client",
+			Status:      StatusPending,
+		})
+	}
+
 	// Clone repo (after deps so git is available on fresh Linux installs)
 	m.Steps = append(m.Steps, InstallStep{
 		ID:          "clone",
