@@ -66,6 +66,7 @@
             ./claude.nix  # Claude Code CLI configuration
             ./engram.nix  # Engram memory layer for AI agents
             ./herdr.nix  # Herdr agent multiplexer configuration
+            ./posting.nix  # Posting terminal HTTP client
             ./yabai.nix  # Yabai window manager configuration
             ./skhd.nix  # Skhd hotkey daemon configuration
             # Nehir (Niri-style WM) trial reverted — back to yabai/skhd/sketchybar.
