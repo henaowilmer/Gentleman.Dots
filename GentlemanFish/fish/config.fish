@@ -38,14 +38,10 @@ if test $IS_TERMUX -eq 0; and set -q BREW_BIN; and test -f $BREW_BIN
     eval ($BREW_BIN shellenv)
 end
 
-# Start tmux/zellij
-if command -sq tmux; and not set -q TMUX
-    tmux
+# Start selected terminal multiplexer
+if status is-interactive; and command -q tmux; and not set -q TMUX; and not set -q ZELLIJ; and not set -q HERDR_ENV
+    tmux new-session -A -s main
 end
-
-#if not set -q ZELLIJ
-#    zellij
-#end
 
 # Initialize tools
 if command -sq starship

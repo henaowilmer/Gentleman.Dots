@@ -85,7 +85,7 @@ type UserChoices struct {
 	Terminal     string // "alacritty", "wezterm", "kitty", "ghostty", "none"
 	InstallFont  bool
 	Shell        string // "fish", "zsh", "nushell"
-	WindowMgr    string // "tmux", "zellij", "none"
+	WindowMgr    string // "tmux", "zellij", "herdr", "none"
 	InstallNvim  bool
 	CreateBackup bool // Whether to backup existing configs
 }
@@ -283,7 +283,10 @@ func (m Model) GetCurrentOptions() []string {
 	case ScreenShellSelect:
 		return []string{"Fish", "Zsh", "Nushell", "─────────────", "ℹ️  Learn about shells"}
 	case ScreenWMSelect:
-		return []string{"Tmux", "Zellij", "None", "─────────────", "ℹ️  Learn about multiplexers"}
+		if m.SystemInfo != nil && m.SystemInfo.IsTermux {
+			return []string{"Tmux", "Zellij", "None", "─────────────", "ℹ️  Learn about multiplexers"}
+		}
+		return []string{"Tmux", "Zellij", "Herdr", "None", "─────────────", "ℹ️  Learn about multiplexers"}
 	case ScreenNvimSelect:
 		return []string{"Yes, install Neovim with config", "No, skip Neovim", "─────────────", "ℹ️  Learn about Neovim", "⌨️  View Keymaps", "📖 LazyVim Guide"}
 	case ScreenBackupConfirm:
@@ -318,7 +321,7 @@ func (m Model) GetCurrentOptions() []string {
 	case ScreenLearnShells:
 		return []string{"Fish", "Zsh", "Nushell", "─────────────", "← Back"}
 	case ScreenLearnWM:
-		return []string{"Tmux", "Zellij", "─────────────", "← Back"}
+		return []string{"Tmux", "Zellij", "Herdr", "─────────────", "← Back"}
 	case ScreenLearnNvim:
 		return []string{"View Features", "View Keymaps", "📖 LazyVim Guide", "─────────────", "← Back"}
 	case ScreenKeymaps:
@@ -550,8 +553,8 @@ func (m *Model) SetupInstallSteps() {
 	})
 
 	// Homebrew (interactive - first install needs password)
-	// Skip for Termux - it uses pkg instead
-	if !m.SystemInfo.HasBrew && !m.SystemInfo.IsTermux {
+	// Skip Termux and native package manager Linux distributions.
+	if !m.SystemInfo.HasBrew && !m.SystemInfo.IsTermux && m.SystemInfo.OS != system.OSArch && m.SystemInfo.OS != system.OSFedora {
 		m.Steps = append(m.Steps, InstallStep{
 			ID:          "homebrew",
 			Name:        "Install Homebrew",
@@ -582,7 +585,7 @@ func (m *Model) SetupInstallSteps() {
 		})
 	}
 
-	// Shell (not interactive - brew doesn't need password)
+	// Shell installation runs through executeStep. Native Linux package managers use sudo there.
 	m.Steps = append(m.Steps, InstallStep{
 		ID:          "shell",
 		Name:        "Install " + m.Choices.Shell,
@@ -590,7 +593,7 @@ func (m *Model) SetupInstallSteps() {
 		Status:      StatusPending,
 	})
 
-	// Window manager (not interactive - brew doesn't need password)
+	// Window manager installation runs through executeStep. Herdr downloads to ~/.local/bin on non-Homebrew Linux.
 	if m.Choices.WindowMgr != "none" && m.Choices.WindowMgr != "" {
 		m.Steps = append(m.Steps, InstallStep{
 			ID:          "wm",
@@ -600,15 +603,7 @@ func (m *Model) SetupInstallSteps() {
 		})
 	}
 
-	// Engram (not interactive - brew/go install don't need password)
-	m.Steps = append(m.Steps, InstallStep{
-		ID:          "engram",
-		Name:        "Install Engram",
-		Description: "SDD memory backend",
-		Status:      StatusPending,
-	})
-
-	// Neovim (not interactive - brew doesn't need password)
+	// Neovim installation runs through executeStep. Native Linux package managers use sudo there.
 	if m.Choices.InstallNvim {
 		m.Steps = append(m.Steps, InstallStep{
 			ID:          "nvim",

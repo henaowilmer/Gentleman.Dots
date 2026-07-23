@@ -272,7 +272,7 @@ func TestSetupInstallStepsMinimal(t *testing.T) {
 	m.SetupInstallSteps()
 
 	// setshell step runs interactively to change the default shell with chsh
-	expectedSteps := []string{"clone", "shell", "engram", "setshell", "cleanup"}
+	expectedSteps := []string{"clone", "shell", "setshell", "cleanup"}
 	if len(m.Steps) != len(expectedSteps) {
 		t.Errorf("Expected %d steps, got %d", len(expectedSteps), len(m.Steps))
 		for _, s := range m.Steps {
@@ -396,8 +396,9 @@ func TestSetupInstallStepsFullInstall(t *testing.T) {
 	m.ExistingConfigs = []string{"nvim"}
 	m.SetupInstallSteps()
 
+	// xcode runs before clone so git is available on a fresh macOS install.
 	// setshell step runs interactively to change the default shell with chsh
-	expectedIDs := []string{"backup", "clone", "homebrew", "xcode", "terminal", "font", "shell", "wm", "engram", "nvim", "setshell", "cleanup"}
+	expectedIDs := []string{"backup", "xcode", "clone", "homebrew", "terminal", "font", "shell", "wm", "nvim", "setshell", "cleanup"}
 	if len(m.Steps) != len(expectedIDs) {
 		t.Errorf("Expected %d steps, got %d", len(expectedIDs), len(m.Steps))
 	}
@@ -898,7 +899,7 @@ func TestShellSelect(t *testing.T) {
 }
 
 func TestWMSelect(t *testing.T) {
-	wms := []string{"tmux", "zellij", "none"}
+	wms := []string{"tmux", "zellij", "herdr", "none"}
 
 	for i, wm := range wms {
 		t.Run(wm, func(t *testing.T) {

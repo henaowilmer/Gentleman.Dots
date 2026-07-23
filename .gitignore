@@ -12,6 +12,9 @@ CLAUDE.md
 GEMINI.md
 CODEX.md
 .github/copilot-instructions.md
-
-# Local AI session artifacts
+# Local AI agent runtime state
 .atl/
+.pi/
+.pi-lens/
+.codegraph/
+**/.pi-lens/

@@ -242,7 +242,7 @@ func TestConfigPaths(t *testing.T) {
 		}
 
 		// Check for expected keys
-		expectedKeys := []string{"nvim", "fish", "zsh", "tmux", "zellij", "alacritty", "ghostty"}
+		expectedKeys := []string{"nvim", "fish", "zsh", "tmux", "zellij", "herdr", "alacritty", "ghostty"}
 		for _, key := range expectedKeys {
 			if _, exists := paths[key]; !exists {
 				t.Errorf("Expected key '%s' in ConfigPaths", key)
@@ -435,6 +435,35 @@ func TestCreateBackup(t *testing.T) {
 			t.Errorf("Expected zsh backup to contain original content, got %q", string(data))
 		}
 	})
+}
+
+func TestCreateBackupRemovesPartialBackupOnFailure(t *testing.T) {
+	home := t.TempDir()
+	originalHome := os.Getenv("HOME")
+	if err := os.Setenv("HOME", home); err != nil {
+		t.Fatalf("Failed to set HOME: %v", err)
+	}
+	defer os.Setenv("HOME", originalHome)
+
+	nvimDir := filepath.Join(home, ".config", "nvim")
+	if err := os.MkdirAll(nvimDir, 0o755); err != nil {
+		t.Fatalf("Failed to create nvim config dir: %v", err)
+	}
+	if err := os.Symlink(filepath.Join(home, "missing-target"), filepath.Join(nvimDir, "broken-link")); err != nil {
+		t.Skipf("Symlinks not supported in this environment: %v", err)
+	}
+
+	backupDir, err := CreateBackup([]string{"nvim"})
+	if err == nil {
+		defer os.RemoveAll(backupDir)
+		t.Fatal("Expected backup to fail for broken symlink")
+	}
+	if backupDir == "" {
+		t.Fatal("Expected backup path to be returned with the error")
+	}
+	if _, statErr := os.Stat(backupDir); !os.IsNotExist(statErr) {
+		t.Fatalf("Expected partial backup %s to be removed, stat error: %v", backupDir, statErr)
+	}
 }
 
 func TestRestoreBackup(t *testing.T) {
