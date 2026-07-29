@@ -107,6 +107,9 @@ func buildStepsForChoices(m *Model) []InstallStep {
 		steps = append(steps, InstallStep{ID: "nvim", Name: "Install Neovim configuration"})
 	}
 
+	// Posting config
+	steps = append(steps, InstallStep{ID: "postingconfig", Name: "Configure Posting"})
+
 	// Set shell as default
 	steps = append(steps, InstallStep{ID: "setshell", Name: "Set shell as default"})
 

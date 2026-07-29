@@ -69,6 +69,8 @@ func executeStep(stepID string, m *Model) error {
 		return stepInstallWM(m)
 	case "nvim":
 		return stepInstallNvim(m)
+	case "postingconfig":
+		return stepConfigurePosting(m)
 	case "cleanup":
 		return stepCleanup(m)
 	case "setshell":
@@ -320,6 +322,32 @@ func stepInstallPosting(m *Model) error {
 	}
 
 	SendLog(stepID, "✓ Posting installed")
+	return nil
+}
+
+// stepConfigurePosting copies the Posting configuration into ~/.config/posting.
+// It runs on every platform, unlike stepInstallPosting which only installs the
+// binary on Termux, because the config must survive a reinstall even where
+// Posting was installed by other means.
+func stepConfigurePosting(m *Model) error {
+	homeDir := os.Getenv("HOME")
+	repoDir := "Gentleman.Dots"
+	stepID := "postingconfig"
+
+	SendLog(stepID, "Copying Posting configuration...")
+	configDir := filepath.Join(homeDir, ".config", "posting")
+	if err := system.EnsureDir(configDir); err != nil {
+		return wrapStepError(stepID, "Configure Posting",
+			"Failed to create the Posting config directory",
+			err)
+	}
+	if err := system.CopyDir(filepath.Join(repoDir, "GentlemanPosting"), configDir); err != nil {
+		return wrapStepError(stepID, "Configure Posting",
+			"Failed to copy the Posting configuration",
+			err)
+	}
+
+	SendLog(stepID, "✓ Posting configured")
 	return nil
 }
 

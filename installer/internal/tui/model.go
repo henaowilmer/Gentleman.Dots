@@ -613,6 +613,14 @@ func (m *Model) SetupInstallSteps() {
 		})
 	}
 
+	// Posting config (runs on every platform, must land before cleanup removes the repo)
+	m.Steps = append(m.Steps, InstallStep{
+		ID:          "postingconfig",
+		Name:        "Configure Posting",
+		Description: "API client config",
+		Status:      StatusPending,
+	})
+
 	// Set default shell (interactive - chsh needs password)
 	m.Steps = append(m.Steps, InstallStep{
 		ID:          "setshell",
