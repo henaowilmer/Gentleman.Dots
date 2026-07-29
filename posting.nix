@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
   python = pkgs.python313Packages;
@@ -213,4 +213,17 @@ let
 in
 {
   home.packages = [ posting ];
+
+  home.activation.copyPosting = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    echo "Copying Posting configuration..."
+    rm -rf "$HOME/.config/posting"
+
+    # Check if the .config directory exists, if not, create it
+    if [ ! -d "$HOME/.config/posting" ]; then
+      mkdir -p "$HOME/.config/posting"
+    fi
+
+    cp -r ${toString ./posting}/* "$HOME/.config/posting/"
+    chmod -R u+w "$HOME/.config/posting"
+  '';
 }
