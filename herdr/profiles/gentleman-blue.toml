@@ -1,0 +1,30 @@
+# Night City Gentleman Blue profile.
+
+[theme]
+# One Dark supplies stable token defaults for values Herdr does not customize.
+name = "one-dark"
+
+[theme.custom]
+panel_bg = "#05070F"
+surface0 = "#070B1A"
+surface1 = "#1C2C54"
+surface_dim = "#05070F"
+overlay0 = "#1C2C54"
+overlay1 = "#4A5578"
+text = "#DBE9FF"
+subtext0 = "#4A5578"
+accent = "#347AFF"
+mauve = "#7C5CFF"
+green = "#4DFF88"
+yellow = "#FFD23D"
+red = "#FF3D81"
+blue = "#347AFF"
+teal = "#5CE1FF"
+peach = "#FF9F1C"
+
+[ui]
+accent = "#347AFF"
+show_agent_labels_on_pane_borders = true
+
+[ui.toast]
+delivery = "herdr"

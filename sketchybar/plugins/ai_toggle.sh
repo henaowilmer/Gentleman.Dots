@@ -4,8 +4,10 @@
 # State persists across sketchybar reloads via cache file
 # ai_hidden_gap spacer keeps separation correct while hidden
 
-NEON_BLUE=0xff347aff
-DIM=0xff4a5578
+# CONFIG_DIR is supplied by SketchyBar; resolve it for direct test/manual runs.
+CONFIG_DIR="${CONFIG_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
+# shellcheck disable=SC1091
+source "$CONFIG_DIR/theme.sh"
 
 STATE_DIR="$HOME/.cache/sketchybar"
 STATE_FILE="$STATE_DIR/ai_quota_hidden"
@@ -30,7 +32,7 @@ apply_state() {
       args+=(--set "$item" drawing=on)
     done
     args+=(--set ai_hidden_gap drawing=off)
-    args+=(--set ai_toggle icon="$ICON_VISIBLE" icon.color=$NEON_BLUE background.border_color=0x99347aff)
+    args+=(--set ai_toggle icon="$ICON_VISIBLE" icon.color=$PRIMARY background.border_color=$GLOW_BLUE)
   fi
 
   sketchybar "${args[@]}" >/dev/null 2>&1 || true

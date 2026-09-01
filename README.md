@@ -352,6 +352,19 @@ brew services restart sketchybar
 brew services stop sketchybar
 ```
 
+### Theme Profiles
+
+`gentleman-blue` is the default Night City profile. Select a profile with the
+matching runtime command; `fish-theme` keeps Fish, Starship, and Atuin aligned.
+
+```bash
+fish-theme gentleman-blue
+sketchybar-theme gentleman-blue
+herdr-theme gentleman-blue
+```
+
+The legacy `gentleman` and `gentleman-cute` names remain available with each command.
+
 ---
 
 ## ⚡ Raycast Scripts
@@ -1018,6 +1031,14 @@ Contributions welcome! Please:
 4. Submit a pull request
 
 For questions or issues, open a GitHub issue.
+
+---
+
+## Contributors
+
+Thanks to everyone who has contributed to Gentleman.Dots!
+
+[![Contributors](https://contrib.rocks/image?repo=Gentleman-Programming/Gentleman.Dots)](https://github.com/Gentleman-Programming/Gentleman.Dots/graphs/contributors)
 
 ---
 

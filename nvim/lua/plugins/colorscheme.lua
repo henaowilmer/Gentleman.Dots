@@ -37,9 +37,9 @@ return {
             name = "catppuccin",
             priority = 1000,
             opts = {
-                flavour = "mocha",     -- latte, frappe, macchiato, mocha
+                flavour = "mocha", -- latte, frappe, macchiato, mocha
                 transparent_background = true, -- disables setting the background color.
-                term_colors = true,    -- sets terminal colors (e.g. `g:terminal_color_0`)
+                term_colors = true, -- sets terminal colors (e.g. `g:terminal_color_0`)
             },
         },
         {
@@ -69,7 +69,7 @@ return {
                     transparent = true, -- do not set background color
                     dimInactive = false, -- dim inactive window `:h hl-NormalNC`
                     terminalColors = true, -- define vim.g.terminal_color_{0,17}
-                    colors = {   -- add/modify theme and palette colors
+                    colors = { -- add/modify theme and palette colors
                         palette = {},
                         theme = {
                             wave = {},

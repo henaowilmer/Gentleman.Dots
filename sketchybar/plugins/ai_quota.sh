@@ -2,15 +2,19 @@
 
 # AI quota - provider-specific quota labels from opencode-quota cache
 
-GREEN=0xff4dff88
-YELLOW=0xffffd23d
-RED=0xffff3d81
-DIM=0xff4a5578
-WHITE=0xffdbe9ff
-ORANGE=0xffff9f1c
-COPILOT_BLUE=0xff347aff
-OC_GO_GREEN=0xff4dff88
-OC_GO_ICON=0xffdbe9ff
+# CONFIG_DIR is supplied by SketchyBar; resolve it for direct test/manual runs.
+CONFIG_DIR="${CONFIG_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
+# shellcheck disable=SC1091
+source "$CONFIG_DIR/theme.sh"
+
+GREEN="$AI_HEALTHY"
+YELLOW="$AI_WARNING"
+RED="$AI_ERROR"
+WHITE="$AI_TEXT"
+ORANGE="$AI_CLAUDE"
+COPILOT_BLUE="$AI_COPILOT"
+OC_GO_GREEN="$AI_HEALTHY"
+OC_GO_ICON="$AI_OPENCODE"
 
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin:$HOME/.local/state/nix/profiles/home-manager/home-path/bin:$HOME/.nix-profile/bin"
 
